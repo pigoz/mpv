@@ -23,6 +23,7 @@
 #include <assert.h>
 
 #include <libavcodec/avcodec.h>
+#include <libavresample/avresample.h>
 #include <libavutil/opt.h>
 
 #include "talloc.h"
@@ -51,9 +52,10 @@ LIBAD_EXTERN(ffmpeg)
 
 struct priv {
     AVCodecContext *avctx;
+    AVAudioResampleContext *avr;
     AVFrame *avframe;
     char *output;
-    char *output_packed; // used by deplanarize to store packed audio samples
+    unsigned char *output_packed; // used to store packed audio samples
     int output_left;
     int unitsize;
     int previous_data_left;  // input demuxer packet data
@@ -202,6 +204,15 @@ static int init(sh_audio_t *sh_audio)
         sh_audio->ds->ss_mul = 2 * sh_audio->wf->nChannels; // 1 byte*ch/packet
     }
 
+    // Initialize libavresample
+    ctx->avr = avresample_alloc_context();
+    if (!ctx->avr) {
+        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to initialize libavresample"
+                                         " context.\n");
+        uninit(sh_audio);
+        return 0;
+    }
+
     // Decode at least 1 byte:  (to get header filled)
     for (int tries = 0;;) {
         int x = decode_audio(sh_audio, sh_audio->a_buffer, 1,
@@ -250,6 +261,11 @@ static void uninit(sh_audio_t *sh)
         av_freep(&lavc_context);
     }
     avcodec_free_frame(&ctx->avframe);
+
+    if (ctx->avr) {
+        avresample_free(&ctx->avr);
+    }
+
     talloc_free(ctx);
     sh->context = NULL;
 }
@@ -268,32 +284,58 @@ static int control(sh_audio_t *sh, int cmd, void *arg, ...)
     return CONTROL_UNKNOWN;
 }
 
-static av_always_inline void deplanarize(struct sh_audio *sh)
+static int interleave_samples(struct sh_audio *sh)
 {
     struct priv *priv = sh->context;
 
-    size_t bps        = av_get_bytes_per_sample(priv->avctx->sample_fmt);
-    size_t nb_samples = priv->avframe->nb_samples;
-    size_t channels   = priv->avctx->channels;
-    size_t size       = bps * nb_samples * channels;
+    AVCodecContext *avctx       = priv->avctx;
+    AVAudioResampleContext *avr = priv->avr;
+    AVFrame *avframe            = priv->avframe;
 
-    if (talloc_get_size(priv->output_packed) != size)
-        priv->output_packed =
-            talloc_realloc_size(priv, priv->output_packed, size);
+    int channel_layout = avframe->channel_layout;
+    int sample_rate    = avframe->sample_rate;
+    int in_sample_fmt  = avframe->format;
+    int out_sample_fmt = av_get_packed_sample_fmt(avframe->format);
 
-    size_t offset = 0;
-    unsigned char *output_ptr = priv->output_packed;
-    unsigned char **src = priv->avframe->data;
+    av_opt_set_int(avr, "in_channel_layout",  channel_layout,  0);
+    av_opt_set_int(avr, "in_sample_fmt",      in_sample_fmt,   0);
+    av_opt_set_int(avr, "in_sample_rate",     sample_rate,     0);
 
-    for (size_t s = 0; s < nb_samples; s++) {
-        for (size_t c = 0; c < channels; c++) {
-            memcpy(output_ptr, src[c] + offset, bps);
-            output_ptr += bps;
-        }
-        offset += bps;
+    av_opt_set_int(avr, "out_channel_layout", channel_layout,  0);
+    av_opt_set_int(avr, "out_sample_fmt",     out_sample_fmt,  0);
+    av_opt_set_int(avr, "out_sample_rate",    sample_rate,     0);
+
+    if (avresample_open(avr) < 0) {
+        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to initialize libavresample"
+                                         " context.\n");
+        return -1;
     }
 
+    int out_linesize;
+    int nb_samples = avframe->nb_samples;
+    int channels   = avctx->channels;
+    int out_size   = av_samples_get_buffer_size(&out_linesize,
+                                                channels,
+                                                nb_samples,
+                                                out_sample_fmt, 0);
+
+    if (talloc_get_size(priv->output_packed) != out_size)
+        priv->output_packed =
+            talloc_realloc_size(priv, priv->output_packed, out_size);
+
+    int out_samples =
+        avresample_convert(avr, &priv->output_packed, out_linesize,
+                           nb_samples, priv->avframe->data,
+                           priv->avframe->linesize[0], nb_samples);
+
+    if (out_samples < 0) {
+        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to resample packet.\n");
+        return -1;
+    }
+
+    avresample_close(avr);
     priv->output = priv->output_packed;
+    return 0;
 }
 
 static int decode_new_packet(struct sh_audio *sh)
@@ -362,7 +404,10 @@ static int decode_new_packet(struct sh_audio *sh)
         abort();
     priv->output_left = output_left;
     if (av_sample_fmt_is_planar(avctx->sample_fmt) && avctx->channels > 1) {
-        deplanarize(sh);
+        if (interleave_samples(sh) < 0) {
+            uninit(sh);
+            return -1;
+        }
     } else {
         priv->output = priv->avframe->data[0];
     }
