@@ -307,7 +307,7 @@ bool osd_draw_on_image(struct osd_state *osd, struct mp_image *dest,
             continue;
         struct sub_bitmaps imgs;
         if (render_object(osd, obj, &imgs, sub_params, formats)) {
-            mp_draw_sub_bitmaps(dest, &imgs, dest_csp);
+            mp_draw_sub_bitmaps(NULL, dest, &imgs, dest_csp);
             changed = true;
         }
     }

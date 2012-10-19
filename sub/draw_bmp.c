@@ -429,8 +429,11 @@ static bool align_bbox_to_swscale_requirements(int *x1, int *y1,
     return (*x2 > *x1) && (*y2 > *y1);
 }
 
-void mp_draw_sub_bitmaps(struct mp_image *dst, struct sub_bitmaps *sbs,
-                         struct mp_csp_details *csp)
+// cache: if not NULL, the function will set *cache to a talloc-allocated cache
+//        containing scaled versions of sbs contents - free the cache with
+//        talloc_free()
+void mp_draw_sub_bitmaps(struct mp_draw_sub_cache **cache, struct mp_image *dst,
+                         struct sub_bitmaps *sbs, struct mp_csp_details *csp)
 {
     int i;
     int x1, y1, x2, y2;
