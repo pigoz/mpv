@@ -103,6 +103,7 @@ struct osd_object {
 
     // caches for OSD conversion (internal to render_object())
     struct osd_conv_cache *cache[OSD_CONV_CACHE_MAX];
+    struct mp_draw_sub_cache *draw_cache;
 
     struct sub_bitmaps cached;
 

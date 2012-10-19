@@ -284,6 +284,7 @@ void draw_osd_with_eosd(struct vo *vo, struct osd_state *osd)
 }
 
 struct draw_on_image_closure {
+    struct osd_state *osd;
     struct mp_image *dest;
     struct mp_csp_details *dest_csp;
     bool changed;
@@ -292,7 +293,10 @@ struct draw_on_image_closure {
 static void draw_on_image(void *ctx, struct sub_bitmaps *imgs)
 {
     struct draw_on_image_closure *closure = ctx;
-    mp_draw_sub_bitmaps(NULL, closure->dest, imgs, closure->dest_csp);
+    struct osd_object *obj = closure->osd->objs[imgs->render_index];
+    struct mp_draw_sub_cache **cache = &obj->draw_cache;
+    mp_draw_sub_bitmaps(cache, closure->dest, imgs, closure->dest_csp);
+    talloc_steal(obj, obj->draw_cache);
     closure->changed = true;
 }
 
@@ -301,7 +305,7 @@ bool osd_draw_on_image(struct osd_state *osd, struct sub_render_params *params,
                        int draw_flags, struct mp_image *dest,
                        struct mp_csp_details *dest_csp)
 {
-    struct draw_on_image_closure closure = {dest, dest_csp};
+    struct draw_on_image_closure closure = {osd, dest, dest_csp};
     osd_draw(osd, params, draw_flags, mp_draw_sub_formats,
              &draw_on_image, &closure);
     return closure.changed;
