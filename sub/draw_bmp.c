@@ -19,6 +19,7 @@
 #include "sub/draw_bmp.h"
 
 #include <stdbool.h>
+#include <assert.h>
 
 #include "sub/sub.h"
 #include "libmpcodecs/mp_image.h"
@@ -29,6 +30,21 @@
 const bool mp_draw_sub_formats[SUBBITMAP_COUNT] = {
     [SUBBITMAP_LIBASS] = true,
     [SUBBITMAP_RGBA] = true,
+};
+
+struct sub_cache {
+    struct mp_image *i, *a;
+};
+
+struct part {
+    int bitmap_pos_id;
+    int num_imgs;
+    struct sub_cache *imgs;
+};
+
+struct mp_draw_sub_cache
+{
+    struct part *parts[MAX_OSD_PARTS];
 };
 
 #define ACCURATE
@@ -447,6 +463,29 @@ void mp_draw_sub_bitmaps(struct mp_draw_sub_cache **cache, struct mp_image *dst,
     float yuv2rgb[3][4];
     float rgb2yuv[3][4];
 
+    if (cache && !*cache)
+        *cache = talloc_zero(NULL, struct mp_draw_sub_cache);
+
+    struct part *part = NULL;
+
+    bool use_cache = sbs->format == SUBBITMAP_RGBA;
+    if (cache && use_cache) {
+        part = (*cache)->parts[sbs->render_index];
+        if (part && part->bitmap_pos_id != sbs->bitmap_pos_id) {
+            talloc_free(part);
+            part = NULL;
+        }
+        if (!part) {
+            part = talloc_zero(*cache, struct part);
+            part->bitmap_pos_id = sbs->bitmap_pos_id;
+            part->num_imgs = sbs->num_parts;
+            part->imgs = talloc_zero_array(part, struct sub_cache,
+                                           part->num_imgs);
+        }
+        assert(part->num_imgs == sbs->num_parts);
+        (*cache)->parts[sbs->render_index] = part;
+    }
+
 #ifdef ACCURATE
     int format = IMGFMT_444P16;
     int bits = 16;
@@ -535,11 +574,20 @@ void mp_draw_sub_bitmaps(struct mp_draw_sub_cache **cache, struct mp_image *dst,
                             0, 0, temp->w, temp->h))
             continue;
 
-        if (!sub_bitmap_to_mp_images(&sbi, color_yuv, &color_a, &sba, sb,
-                                     sbs->format, csp, rgb2yuv, format, bits)) {
-            mp_msg(MSGT_VO, MSGL_ERR,
-                   "render_sub_bitmap: invalid sub bitmap type\n");
-            continue;
+        if (part) {
+            sbi = part->imgs[i].i;
+            sba = part->imgs[i].a;
+        }
+
+        if (!(sbi && sba)) {
+            if (!sub_bitmap_to_mp_images(&sbi, color_yuv, &color_a, &sba, sb,
+                                         sbs->format, csp, rgb2yuv, format,
+                                         bits))
+            {
+                mp_msg(MSGT_VO, MSGL_ERR,
+                       "render_sub_bitmap: invalid sub bitmap type\n");
+                continue;
+            }
         }
 
         // call blend_alpha 3 times
@@ -570,10 +618,13 @@ void mp_draw_sub_bitmaps(struct mp_draw_sub_cache **cache, struct mp_image *dst,
             }
         }
 
-        if (sbi)
+        if (part) {
+            part->imgs[i].i = talloc_steal(part, sbi);
+            part->imgs[i].a = talloc_steal(part, sba);
+        } else {
             free_mp_image(sbi);
-        if (sba)
             free_mp_image(sba);
+        }
     }
 
     if (temp != &dst_region) {
