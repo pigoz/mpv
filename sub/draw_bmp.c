@@ -26,6 +26,11 @@
 #include "libmpcodecs/img_format.h"
 #include "libvo/csputils.h"
 
+const bool mp_draw_sub_formats[SUBBITMAP_COUNT] = {
+    [SUBBITMAP_LIBASS] = true,
+    [SUBBITMAP_RGBA] = true,
+};
+
 #define ACCURATE
 #define CONDITIONAL
 #define CONDITIONAL2
