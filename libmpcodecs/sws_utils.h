@@ -19,6 +19,7 @@
 #ifndef MPLAYER_SWS_UTILS_H
 #define MPLAYER_SWS_UTILS_H
 
+#include <stdbool.h>
 #include <libswscale/swscale.h>
 
 struct mp_image;
@@ -39,6 +40,8 @@ struct SwsContext *sws_getContextFromCmdLine_hq(int srcW, int srcH,
                                                 int dstH,
                                                 int dstFormat);
 int mp_sws_set_colorspace(struct SwsContext *sws, struct mp_csp_details *csp);
+
+bool mp_sws_supported_format(int imgfmt);
 
 void mp_image_swscale(struct mp_image *dst,
                       const struct mp_image *src,
