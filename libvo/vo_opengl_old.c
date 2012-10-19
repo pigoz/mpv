@@ -1081,6 +1081,8 @@ static int control(struct vo *vo, uint32_t request, void *data)
         render_osd(vo, data);
         return VO_TRUE;
     case VOCTRL_QUERY_EOSD_FORMAT:
+        if (!p->use_osd)
+            break;
         return mpgl_osd_query_format(p->osd, *(int *)data) ? VO_TRUE : VO_NOTIMPL;
     case VOCTRL_GET_EOSD_RES: {
         struct mp_eosd_res *r = data;
