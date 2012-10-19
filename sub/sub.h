@@ -72,9 +72,6 @@ struct sub_bitmaps {
     struct sub_bitmap *parts;
     int num_parts;
 
-    // Provided for VOs with old code
-    struct ass_image *imgs;
-
     // Incremented on each change
     int bitmap_id, bitmap_pos_id;
 };
