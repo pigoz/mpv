@@ -91,21 +91,12 @@ void *vo_vobsub=NULL;
 static struct osd_state *global_osd;
 
 
-static void osd_update_ext(struct osd_state *osd, struct mp_eosd_res res)
+static bool osd_res_equals(struct mp_eosd_res a, struct mp_eosd_res b)
 {
-    struct mp_eosd_res old = osd->res;
-    if (old.w != res.w || old.h != res.h || old.ml != res.ml || old.mt != res.mt
-        || old.mr != res.mr || old.mb != res.mb)
-    {
-        osd->res = res;
-        for (int n = 0; n < MAX_OSD_PARTS; n++)
-            osd->objs[n]->force_redraw = true;
-    }
-}
-
-void osd_update(struct osd_state *osd, int w, int h)
-{
-    osd_update_ext(osd, (struct mp_eosd_res) {.w = w, .h = h});
+    return a.w == b.w && a.h == b.h && a.ml == b.ml && a.mt == b.mt
+        && a.mr == b.mr && a.mb == b.mb
+        && a.display_par == b.display_par
+        && a.video_par == b.video_par;
 }
 
 struct osd_state *osd_create(struct MPOpts *opts, struct ass_library *asslib)
@@ -169,11 +160,13 @@ static void render_object(struct osd_state *osd, struct osd_object *obj,
 {
     *out_imgs = (struct sub_bitmaps) {0};
 
+    if (!osd_res_equals(sub_params->dim, obj->vo_res))
+        obj->force_redraw = true;
+    obj->vo_res = sub_params->dim;
+
     if (obj->type == OSDTYPE_SPU) {
-        if (spu_visible(osd, obj)) {
-            //spudec_get_bitmap(vo_spudec, osd->res.w, osd->res.h, out_imgs);
-            spudec_get_indexed(vo_spudec, &osd->res, out_imgs);
-        }
+        if (spu_visible(osd, obj))
+            spudec_get_indexed(vo_spudec, &obj->vo_res, out_imgs);
     } else if (obj->type == OSDTYPE_SUB) {
         struct sub_render_params p = *sub_params;
         if (p.pts != MP_NOPTS_VALUE)
@@ -227,8 +220,6 @@ void osd_draw(struct osd_state *osd, struct sub_render_params *params,
 {
     if (draw_flags & OSD_DRAW_SUB_FILTER)
         draw_flags |= OSD_DRAW_SUB_ONLY;
-
-    osd_update_ext(osd, params->dim);
 
     for (int n = 0; n < MAX_OSD_PARTS; n++) {
         struct osd_object *obj = osd->objs[n];

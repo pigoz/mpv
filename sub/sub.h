@@ -108,6 +108,7 @@ struct osd_object {
     // VO cache state
     int vo_bitmap_id;
     int vo_bitmap_pos_id;
+    struct mp_eosd_res vo_res;
 
     // Internally used by osd_libass.c
     struct ass_track *osd_track;
@@ -124,8 +125,6 @@ struct osd_state {
     double vo_sub_pts;
 
     bool render_subs_in_filter;
-
-    struct mp_eosd_res res;
 
     char *osd_text;             // OSDTYPE_OSD
     int progbar_type, progbar_value; // OSDTYPE_PROGBAR
@@ -205,7 +204,6 @@ void draw_osd_with_eosd(struct vo *vo, struct osd_state *osd);
 
 struct osd_state *osd_create(struct MPOpts *opts, struct ass_library *asslib);
 void osd_set_text(struct osd_state *osd, const char *text);
-void osd_update(struct osd_state *osd, int dxs, int dys);
 void vo_osd_changed(int new_value);
 void osd_reset_changed(struct osd_state *osd);
 bool osd_has_changed(struct osd_state *osd);
