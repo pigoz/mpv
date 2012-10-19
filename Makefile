@@ -120,6 +120,7 @@ SRCS_COMMON = asxparser.c \
               libaf/af_karaoke.c \
               libaf/af_lavcac3enc.c \
               libaf/af_lavcresample.c \
+              libaf/af_lavr.c \
               libaf/af_pan.c \
               libaf/af_resample.c \
               libaf/af_scaletempo.c \
