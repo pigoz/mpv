@@ -1225,9 +1225,9 @@ static int query_format(d3d_priv *priv, uint32_t movie_fmt)
         return 0;
 
     int eosd_caps = VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW
-                    | VFCAP_OSD | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN;
+                    | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN;
     if (!priv->opt_disable_eosd)
-        eosd_caps |= VFCAP_EOSD | VFCAP_EOSD_RGBA;
+        eosd_caps |= VFCAP_OSD;
     return eosd_caps;
 }
 

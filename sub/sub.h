@@ -208,8 +208,8 @@ struct osd_state *osd_create(struct MPOpts *opts, struct ass_library *asslib);
 void osd_set_text(struct osd_state *osd, const char *text);
 void osd_update(struct osd_state *osd, int dxs, int dys);
 void vo_osd_changed(int new_value);
-void vo_osd_reset_changed(void);
-bool vo_osd_has_changed(struct osd_state *osd);
+void osd_reset_changed(struct osd_state *osd);
+bool osd_has_changed(struct osd_state *osd);
 void osd_free(struct osd_state *osd);
 
 enum mp_osd_draw_flags {

@@ -316,7 +316,7 @@ void vo_osd_changed(int new_value)
     }
 }
 
-bool vo_osd_has_changed(struct osd_state *osd)
+bool osd_has_changed(struct osd_state *osd)
 {
     for (int n = 0; n < MAX_OSD_PARTS; n++) {
         if (osd->objs[n]->force_redraw)
@@ -325,10 +325,8 @@ bool vo_osd_has_changed(struct osd_state *osd)
     return false;
 }
 
-// Needed for VOs using the old OSD API (osd_draw_text_[ext]).
-void vo_osd_reset_changed(void)
+void osd_reset_changed(struct osd_state *osd)
 {
-    struct osd_state *osd = global_osd;
     for (int n = 0; n < MAX_OSD_PARTS; n++)
         osd->objs[n]->force_redraw = false;
 }

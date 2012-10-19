@@ -26,6 +26,7 @@
 #define VFCAP_CSP_SUPPORTED_BY_HW 0x2
 // set if the driver/filter can draw OSD
 #define VFCAP_OSD 0x4
+#define VFCAP_EOSD VFCAP_OSD
 // scaling up/down by hardware, or software:
 #define VFCAP_HWSCALE_UP 0x10
 #define VFCAP_HWSCALE_DOWN 0x20
@@ -40,11 +41,7 @@
 #define VFCAP_ACCEPT_STRIDE 0x400
 // filter does postprocessing (so you shouldn't scale/filter image before it)
 #define VFCAP_POSTPROC 0x800
-// filter can draw EOSD
-#define VFCAP_EOSD 0x2000
 // used by libvo and vf_vo, indicates the VO does not support draw_slice for this format
 #define VOCAP_NOSLICES 0x8000
-#define VFCAP_EOSD_FILTER 0x20000 // EOSD is drawn in filter chain
-#define VFCAP_EOSD_RGBA 0x40000
 
 #endif /* MPLAYER_VFCAP_H */

@@ -1401,8 +1401,8 @@ static uint32_t get_image(struct vo *vo, mp_image_t *mpi)
 static int query_format(uint32_t format)
 {
     int default_flags = VFCAP_CSP_SUPPORTED | VFCAP_CSP_SUPPORTED_BY_HW
-        | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_OSD | VFCAP_EOSD
-        | VFCAP_EOSD_RGBA | VFCAP_FLIP;
+        | VFCAP_HWSCALE_UP | VFCAP_HWSCALE_DOWN | VFCAP_OSD
+        | VFCAP_FLIP;
     switch (format) {
     case IMGFMT_YV12:
     case IMGFMT_I420:
