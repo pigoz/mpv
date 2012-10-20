@@ -76,7 +76,7 @@ struct sub_bitmaps {
     int bitmap_id, bitmap_pos_id;
 };
 
-struct mp_eosd_res {
+struct mp_osd_res {
     int w, h; // screen dimensions, including black borders
     int mt, mb, ml, mr; // borders (top, bottom, left, right)
     double display_par;
@@ -108,7 +108,7 @@ struct osd_object {
     // VO cache state
     int vo_bitmap_id;
     int vo_bitmap_pos_id;
-    struct mp_eosd_res vo_res;
+    struct mp_osd_res vo_res;
 
     // Internally used by osd_libass.c
     struct ass_track *osd_track;
@@ -122,7 +122,7 @@ struct osd_state {
     struct ass_renderer *ass_renderer;
     struct sh_sub *sh_sub;
     double sub_offset;
-    double vo_sub_pts;
+    double vo_pts;
 
     bool render_subs_in_filter;
 
@@ -200,8 +200,6 @@ extern float sub_fps;
 
 extern int sub_justify;
 
-void draw_osd_with_eosd(struct vo *vo, struct osd_state *osd);
-
 struct osd_state *osd_create(struct MPOpts *opts, struct ass_library *asslib);
 void osd_set_text(struct osd_state *osd, const char *text);
 void vo_osd_changed(int new_value);
@@ -214,14 +212,15 @@ enum mp_osd_draw_flags {
     OSD_DRAW_SUB_ONLY   = (1 << 1),
 };
 
-void osd_draw(struct osd_state *osd, struct sub_render_params *params,
-              int draw_flags, const bool formats[SUBBITMAP_COUNT],
+void osd_draw(struct osd_state *osd, struct mp_osd_res res,
+              double video_pts, int draw_flags,
+              const bool formats[SUBBITMAP_COUNT],
               void (*cb)(void *ctx, struct sub_bitmaps *imgs), void *cb_ctx);
 
 struct mp_image;
 struct mp_csp_details;
-bool osd_draw_on_image(struct osd_state *osd, struct sub_render_params *params,
-                       int draw_flags, struct mp_image *dest,
+bool osd_draw_on_image(struct osd_state *osd, struct mp_osd_res res,
+                       double video_pts, int draw_flags, struct mp_image *dest,
                        struct mp_csp_details *dest_csp);
 
 bool sub_bitmaps_bb(struct sub_bitmaps *imgs, int *x1, int *y1,

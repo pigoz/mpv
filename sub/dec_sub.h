@@ -12,7 +12,7 @@ struct MPOpts *opts;
 
 struct sub_render_params {
     double pts;
-    struct mp_eosd_res dim;
+    struct mp_osd_res dim;
 };
 
 static inline bool is_text_sub(int type)

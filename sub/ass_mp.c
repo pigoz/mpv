@@ -228,7 +228,7 @@ ASS_Track *mp_ass_read_stream(ASS_Library *library, const char *fname,
 }
 
 void mp_ass_configure(ASS_Renderer *priv, struct MPOpts *opts,
-                      struct mp_eosd_res *dim)
+                      struct mp_osd_res *dim)
 {
     ass_set_frame_size(priv, dim->w, dim->h);
     ass_set_margins(priv, dim->mt, dim->mb, dim->ml, dim->mr);

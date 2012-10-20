@@ -2292,7 +2292,7 @@ int reinit_video_chain(struct MPContext *mpctx)
                                                               &retcode);
             if (vf_ass)
                 sh_video->vfilter = vf_ass;
-            else if (retcode == -1) // vf_ass open() returns -1 VO has EOSD
+            else if (retcode == -1) // vf_ass open() returns -1 VO has OSD
                 mp_msg(MSGT_CPLAYER, MSGL_V, "[ass] vf_ass not needed\n");
             else
                 mp_msg(MSGT_CPLAYER, MSGL_ERR,
@@ -2550,7 +2550,7 @@ static int redraw_osd(struct MPContext *mpctx)
     if (vo_redraw_frame(vo) < 0)
         return -1;
 
-    mpctx->osd->vo_sub_pts = mpctx->video_pts;
+    mpctx->osd->vo_pts = mpctx->video_pts;
     vo_draw_osd(vo, mpctx->osd);
     osd_reset_changed(mpctx->osd);
 
@@ -3159,7 +3159,7 @@ static void run_playloop(struct MPContext *mpctx)
         update_subtitles(mpctx, sh_video->pts);
         update_osd_msg(mpctx);
 
-        mpctx->osd->vo_sub_pts = mpctx->video_pts;
+        mpctx->osd->vo_pts = mpctx->video_pts;
         vo_draw_osd(vo, mpctx->osd);
         osd_reset_changed(mpctx->osd);
 

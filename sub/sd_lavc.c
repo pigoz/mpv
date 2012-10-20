@@ -190,7 +190,7 @@ static void get_bitmaps(struct sh_sub *sh, struct osd_state *osd,
     int inw = priv->avctx->width;
     int inh = priv->avctx->height;
     guess_resolution(sh->type, &inw, &inh);
-    struct mp_eosd_res *d = &params->dim;
+    struct mp_osd_res *d = &params->dim;
     double xscale = (double) (d->w - d->ml - d->mr) / inw;
     double yscale = (double) (d->h - d->mt - d->mb) / inh;
     for (int i = 0; i < priv->count; i++) {

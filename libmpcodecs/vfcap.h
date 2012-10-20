@@ -26,7 +26,6 @@
 #define VFCAP_CSP_SUPPORTED_BY_HW 0x2
 // set if the driver/filter can draw OSD
 #define VFCAP_OSD 0x4
-#define VFCAP_EOSD VFCAP_OSD
 // scaling up/down by hardware, or software:
 #define VFCAP_HWSCALE_UP 0x10
 #define VFCAP_HWSCALE_DOWN 0x20

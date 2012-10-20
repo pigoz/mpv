@@ -91,7 +91,7 @@ void *vo_vobsub=NULL;
 static struct osd_state *global_osd;
 
 
-static bool osd_res_equals(struct mp_eosd_res a, struct mp_eosd_res b)
+static bool osd_res_equals(struct mp_osd_res a, struct mp_osd_res b)
 {
     return a.w == b.w && a.h == b.h && a.ml == b.ml && a.mt == b.mt
         && a.mr == b.mr && a.mb == b.mb
@@ -154,21 +154,21 @@ static bool spu_visible(struct osd_state *osd, struct osd_object *obj)
 }
 
 static void render_object(struct osd_state *osd, struct osd_object *obj,
-                          struct sub_bitmaps *out_imgs,
-                          struct sub_render_params *sub_params,
-                          const bool formats[SUBBITMAP_COUNT])
+                          struct mp_osd_res res, double video_pts,
+                          const bool formats[SUBBITMAP_COUNT],
+                          struct sub_bitmaps *out_imgs)
 {
     *out_imgs = (struct sub_bitmaps) {0};
 
-    if (!osd_res_equals(sub_params->dim, obj->vo_res))
+    if (!osd_res_equals(res, obj->vo_res))
         obj->force_redraw = true;
-    obj->vo_res = sub_params->dim;
+    obj->vo_res = res;
 
     if (obj->type == OSDTYPE_SPU) {
         if (spu_visible(osd, obj))
             spudec_get_indexed(vo_spudec, &obj->vo_res, out_imgs);
     } else if (obj->type == OSDTYPE_SUB) {
-        struct sub_render_params p = *sub_params;
+        struct sub_render_params p = {video_pts, obj->vo_res};
         if (p.pts != MP_NOPTS_VALUE)
             p.pts += sub_delay - osd->sub_offset;
         sub_get_bitmaps(osd, &p, out_imgs);
@@ -205,17 +205,17 @@ static void render_object(struct osd_state *osd, struct osd_object *obj,
 
     bool cached = false; // do we have a copy of all the image data?
 
-    if (formats[SUBBITMAP_RGBA] && out_imgs->format == SUBBITMAP_INDEXED) {
+    if (formats[SUBBITMAP_RGBA] && out_imgs->format == SUBBITMAP_INDEXED)
         cached |= osd_conv_idx_to_rgba(obj->cache[0], out_imgs);
-    }
 
     if (cached)
         obj->cached = *out_imgs;
 }
 
 // draw_flags is a bit field of OSD_DRAW_* constants
-void osd_draw(struct osd_state *osd, struct sub_render_params *params,
-              int draw_flags, const bool formats[SUBBITMAP_COUNT],
+void osd_draw(struct osd_state *osd, struct mp_osd_res res,
+              double video_pts, int draw_flags,
+              const bool formats[SUBBITMAP_COUNT],
               void (*cb)(void *ctx, struct sub_bitmaps *imgs), void *cb_ctx)
 {
     if (draw_flags & OSD_DRAW_SUB_FILTER)
@@ -232,7 +232,7 @@ void osd_draw(struct osd_state *osd, struct sub_render_params *params,
             continue;
 
         struct sub_bitmaps imgs;
-        render_object(osd, obj, &imgs, params, formats);
+        render_object(osd, obj, res, video_pts, formats, &imgs);
         if (imgs.num_parts > 0) {
             if (formats[imgs.format]) {
                 cb(cb_ctx, &imgs);
@@ -243,35 +243,6 @@ void osd_draw(struct osd_state *osd, struct sub_render_params *params,
             }
         }
     }
-}
-
-static void vo_draw_eosd(void *ctx, struct sub_bitmaps *imgs)
-{
-    struct vo *vo = ctx;
-    vo_control(vo, VOCTRL_DRAW_EOSD, imgs);
-}
-
-void draw_osd_with_eosd(struct vo *vo, struct osd_state *osd)
-{
-    struct mp_eosd_res dim = {0};
-    if (vo_control(vo, VOCTRL_GET_EOSD_RES, &dim) != VO_TRUE)
-        return;
-
-    bool formats[SUBBITMAP_COUNT];
-    for (int n = 0; n < SUBBITMAP_COUNT; n++) {
-        int data = n;
-        formats[n] = vo_control(vo, VOCTRL_QUERY_EOSD_FORMAT, &data) == VO_TRUE;
-    }
-
-    dim.display_par = vo->monitor_par;
-    dim.video_par = vo->aspdat.par;
-
-    struct sub_render_params subparams = {
-        .pts = osd->vo_sub_pts,
-        .dim = dim,
-    };
-
-    osd_draw(osd, &subparams, 0, formats, &vo_draw_eosd, vo);
 }
 
 struct draw_on_image_closure {
@@ -292,12 +263,12 @@ static void draw_on_image(void *ctx, struct sub_bitmaps *imgs)
 }
 
 // Returns whether anything was drawn.
-bool osd_draw_on_image(struct osd_state *osd, struct sub_render_params *params,
-                       int draw_flags, struct mp_image *dest,
+bool osd_draw_on_image(struct osd_state *osd, struct mp_osd_res res,
+                       double video_pts, int draw_flags, struct mp_image *dest,
                        struct mp_csp_details *dest_csp)
 {
     struct draw_on_image_closure closure = {osd, dest, dest_csp};
-    osd_draw(osd, params, draw_flags, mp_draw_sub_formats,
+    osd_draw(osd, res, video_pts, draw_flags, mp_draw_sub_formats,
              &draw_on_image, &closure);
     return closure.changed;
 }
