@@ -33,7 +33,6 @@
 #include "core/options.h"
 
 #include "ad_internal.h"
-#include "audio/reorder_ch.h"
 
 #include "compat/mpbswap.h"
 #include "compat/libav.h"
@@ -440,13 +439,6 @@ static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
         memcpy(buf, priv->output, size);
         priv->output += size;
         priv->output_left -= size;
-        if (avctx->channels >= 5) {
-            int samplesize = av_get_bytes_per_sample(avctx->sample_fmt);
-            reorder_channel_nch(buf, AF_CHANNEL_LAYOUT_LAVC_DEFAULT,
-                                AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
-                                avctx->channels,
-                                size / samplesize, samplesize);
-        }
         if (len < 0)
             len = size;
         else
