@@ -293,10 +293,10 @@ struct draw_on_image_closure {
 static void draw_on_image(void *ctx, struct sub_bitmaps *imgs)
 {
     struct draw_on_image_closure *closure = ctx;
-    struct osd_object *obj = closure->osd->objs[imgs->render_index];
-    struct mp_draw_sub_cache **cache = &obj->draw_cache;
-    mp_draw_sub_bitmaps(cache, closure->dest, imgs, closure->dest_csp);
-    talloc_steal(obj, obj->draw_cache);
+    struct osd_state *osd = closure->osd;
+    mp_draw_sub_bitmaps(&osd->draw_cache, closure->dest, imgs,
+                        closure->dest_csp);
+    talloc_steal(osd, osd->draw_cache);
     closure->changed = true;
 }
 
