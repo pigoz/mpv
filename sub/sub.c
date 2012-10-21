@@ -168,10 +168,10 @@ static void render_object(struct osd_state *osd, struct osd_object *obj,
         if (spu_visible(osd, obj))
             spudec_get_indexed(vo_spudec, &obj->vo_res, out_imgs);
     } else if (obj->type == OSDTYPE_SUB) {
-        struct sub_render_params p = {video_pts, obj->vo_res};
-        if (p.pts != MP_NOPTS_VALUE)
-            p.pts += sub_delay - osd->sub_offset;
-        sub_get_bitmaps(osd, &p, out_imgs);
+        double sub_pts = video_pts;
+        if (sub_pts != MP_NOPTS_VALUE)
+            sub_pts += sub_delay - osd->sub_offset;
+        sub_get_bitmaps(osd, obj->vo_res, sub_pts, out_imgs);
     } else {
         osd_object_get_bitmaps(osd, obj, out_imgs);
     }
