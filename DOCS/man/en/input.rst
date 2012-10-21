@@ -87,18 +87,10 @@ cycle <property> [up|down]
 speed_mult <value>
     Multiply the ``speed`` property by the given value.
 
-screenshot [single|each-frame] [video|window]
+screenshot [subtitles|video|window] [single|each-frame]
     Take a screenshot.
 
     First argument:
-
-    <single> (default)
-        Take a single screenshot.
-    <each-frame>
-        Take a screenshot each frame. Issue this command again to stop taking
-        screenshots.
-
-    Second argument:
 
     <subtitles> (default)
         Save the video image, in its original resolution, and with subtitles.
@@ -111,6 +103,14 @@ screenshot [single|each-frame] [video|window]
         Save the contents of the mplayer window. Typically scaled, with OSD and
         subtitles. The exact behavior depends on the selected video output, and
         if no support is available, this will act like ``video``.
+
+    Second argument:
+
+    <single> (default)
+        Take a single screenshot.
+    <each-frame>
+        Take a screenshot each frame. Issue this command again to stop taking
+        screenshots.
 
 playlist_next [weak|force]
     Go to the next entry on the playlist.
