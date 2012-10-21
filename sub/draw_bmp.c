@@ -20,6 +20,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <math.h>
 
 #include "sub/sub.h"
 #include "libmpcodecs/mp_image.h"
