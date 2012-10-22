@@ -49,8 +49,9 @@ typedef struct af_data_s
 
 
 // Flags used for defining the behavior of an audio filter
-#define AF_FLAGS_REENTRANT      0x00000000
-#define AF_FLAGS_NOT_REENTRANT  0x00000001
+enum AFReentrance {
+    AF_FLAGS_REENTRANT, AF_FLAGS_NOT_REENTRANT
+};
 
 /* Audio filter information not specific for current instance, but for
    a specific filter */
