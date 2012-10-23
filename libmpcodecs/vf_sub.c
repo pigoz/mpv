@@ -272,10 +272,7 @@ static const unsigned int fmt_list[] = {
 
 static int vf_open(vf_instance_t *vf, char *args)
 {
-    int flags;
     vf->priv->outfmt = vf_match_csp(&vf->next, fmt_list, IMGFMT_YV12);
-    if (vf->priv->outfmt)
-        flags = vf_next_query_format(vf, vf->priv->outfmt);
     if (!vf->priv->outfmt) {
         uninit(vf);
         return 0;
