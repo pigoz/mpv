@@ -266,7 +266,7 @@ static struct mp_image *add_subs(struct MPContext *mpctx,
 }
 
 static void screenshot_save(struct MPContext *mpctx, struct mp_image *image,
-                            int mode)
+                            bool with_subs)
 {
     screenshot_ctx *ctx = mpctx->screenshot_ctx;
 
@@ -276,7 +276,7 @@ static void screenshot_save(struct MPContext *mpctx, struct mp_image *image,
     struct image_writer_opts *opts = mpctx->opts.screenshot_image_opts;
 
     struct mp_image *new_image = image;
-    if (mode == MODE_SUBTITLES)
+    if (with_subs)
         new_image = add_subs(mpctx, new_image, &colorspace);
 
     char *filename = gen_fname(ctx, image_writer_file_ext(opts));
@@ -335,7 +335,9 @@ void screenshot_request(struct MPContext *mpctx, int mode, bool each_frame)
         if (!force_vf(mpctx)
             && vo_control(mpctx->video_out, VOCTRL_SCREENSHOT, &args) == true)
         {
-            screenshot_save(mpctx, args.out_image, mode);
+            if (args.has_osd)
+                mode = 0;
+            screenshot_save(mpctx, args.out_image, mode == MODE_SUBTITLES);
             free_mp_image(args.out_image);
         } else {
             mp_msg(MSGT_CPLAYER, MSGL_INFO, "No VO support for taking"
