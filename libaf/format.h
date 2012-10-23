@@ -27,125 +27,71 @@
 #include "config.h"
 #include "bstr.h"
 
-// Endianness
-#define AF_FORMAT_BE            (0 << 0) // Big Endian
-#define AF_FORMAT_LE            (1 << 0) // Little Endian
-#define AF_FORMAT_END_MASK      (1 << 0)
+#define DEF_FMT(x) x##_LE, x##_BE, x##P_LE, x##P_BE
 
-#if BYTE_ORDER == BIG_ENDIAN
-#define AF_FORMAT_NE            AF_FORMAT_BE
-#else
-#define AF_FORMAT_NE            AF_FORMAT_LE
-#endif
+enum AFSampleFormat {
+    DEF_FMT(AF_FORMAT_U8),
+    DEF_FMT(AF_FORMAT_S8),
+    DEF_FMT(AF_FORMAT_U16),
+    DEF_FMT(AF_FORMAT_S16),
+    DEF_FMT(AF_FORMAT_U24),
+    DEF_FMT(AF_FORMAT_S24),
+    DEF_FMT(AF_FORMAT_U32),
+    DEF_FMT(AF_FORMAT_S32),
+    DEF_FMT(AF_FORMAT_FLT),
 
-// Signed/unsigned
-#define AF_FORMAT_SI            (0 << 1) // Signed
-#define AF_FORMAT_US            (1 << 1) // Unsigned
-#define AF_FORMAT_SIGN_MASK     (1 << 1)
+    AF_FORMAT_AC3,
+    AF_FORMAT_IEC61937,
 
-// Fixed or floating point
-#define AF_FORMAT_I             (0 << 2) // Int
-#define AF_FORMAT_F             (1 << 2) // Foating point
-#define AF_FORMAT_POINT_MASK    (1 << 2)
+    AF_FORMAT_NB,
+};
 
-// Bits used
-#define AF_FORMAT_8BIT          (0 << 3)
-#define AF_FORMAT_16BIT         (1 << 3)
-#define AF_FORMAT_24BIT         (2 << 3)
-#define AF_FORMAT_32BIT         (3 << 3)
-#define AF_FORMAT_40BIT         (4 << 3)
-#define AF_FORMAT_48BIT         (5 << 3)
-#define AF_FORMAT_BITS_MASK     (7 << 3)
+#undef DEF_FMT
 
-// Special flags refering to non pcm data
-#define AF_FORMAT_MU_LAW        (1 << 6)
-#define AF_FORMAT_A_LAW         (2 << 6)
-#define AF_FORMAT_MPEG2         (3 << 6) // MPEG(2) audio
-#define AF_FORMAT_AC3           (4 << 6) // Dolby Digital AC3
-#define AF_FORMAT_IMA_ADPCM     (5 << 6)
-#define AF_FORMAT_IEC61937      (6 << 6)
-#define AF_FORMAT_SPECIAL_MASK  (7 << 6)
+int af_format_bits(enum AFSampleFromat format);
+int af_format_le(enum AFSampleFromat format);
+int af_format_be(enum AFSampleFromat format);
+int af_format_planar(enum AFSampleFromat format);
+const char *af_format_name(enum AFSampleFromat format);
 
-#define AF_FORMAT_MASK          ((1 << 9) - 1)
+//// Signed/unsigned
+//#define AF_FORMAT_SI            (0 << 1) // Signed
+//#define AF_FORMAT_US            (1 << 1) // Unsigned
+//#define AF_FORMAT_SIGN_MASK     (1 << 1)
+//
+//// Fixed or floating point
+//#define AF_FORMAT_I             (0 << 2) // Int
+//#define AF_FORMAT_F             (1 << 2) // Foating point
+//#define AF_FORMAT_POINT_MASK    (1 << 2)
+//
+//// Bits used
+//#define AF_FORMAT_8BIT          (0 << 3)
+//#define AF_FORMAT_16BIT         (1 << 3)
+//#define AF_FORMAT_24BIT         (2 << 3)
+//#define AF_FORMAT_32BIT         (3 << 3)
+//#define AF_FORMAT_40BIT         (4 << 3)
+//#define AF_FORMAT_48BIT         (5 << 3)
+//#define AF_FORMAT_BITS_MASK     (7 << 3)
+//
+//// Special flags refering to non pcm data
+//#define AF_FORMAT_MU_LAW        (1 << 6)
+//#define AF_FORMAT_A_LAW         (2 << 6)
+//#define AF_FORMAT_MPEG2         (3 << 6) // MPEG(2) audio
+//#define AF_FORMAT_AC3           (4 << 6) // Dolby Digital AC3
+//#define AF_FORMAT_IMA_ADPCM     (5 << 6)
+//#define AF_FORMAT_IEC61937      (6 << 6)
+//#define AF_FORMAT_SPECIAL_MASK  (7 << 6)
+//
+//#define AF_FORMAT_MASK          ((1 << 9) - 1)
 
 // PREDEFINED formats
 
-#define AF_FORMAT_U8            (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_8BIT | \
-                                 AF_FORMAT_NE)
-#define AF_FORMAT_S8            (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_8BIT | \
-                                 AF_FORMAT_NE)
-#define AF_FORMAT_U16_LE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_U16_BE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_BE)
-#define AF_FORMAT_S16_LE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_S16_BE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_BE)
-#define AF_FORMAT_U24_LE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_24BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_U24_BE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_24BIT | \
-                                 AF_FORMAT_BE)
-#define AF_FORMAT_S24_LE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_24BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_S24_BE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_24BIT | \
-                                 AF_FORMAT_BE)
-#define AF_FORMAT_U32_LE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_32BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_U32_BE        (AF_FORMAT_I | AF_FORMAT_US | AF_FORMAT_32BIT | \
-                                 AF_FORMAT_BE)
-#define AF_FORMAT_S32_LE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_32BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_S32_BE        (AF_FORMAT_I | AF_FORMAT_SI | AF_FORMAT_32BIT | \
-                                 AF_FORMAT_BE)
-
-#define AF_FORMAT_FLOAT_LE      (AF_FORMAT_F | AF_FORMAT_32BIT | AF_FORMAT_LE)
-#define AF_FORMAT_FLOAT_BE      (AF_FORMAT_F | AF_FORMAT_32BIT | AF_FORMAT_BE)
-
-#define AF_FORMAT_AC3_LE        (AF_FORMAT_AC3 | AF_FORMAT_16BIT | AF_FORMAT_LE)
-#define AF_FORMAT_AC3_BE        (AF_FORMAT_AC3 | AF_FORMAT_16BIT | AF_FORMAT_BE)
-
-#define AF_FORMAT_IEC61937_LE   (AF_FORMAT_IEC61937 | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_LE)
-#define AF_FORMAT_IEC61937_BE   (AF_FORMAT_IEC61937 | AF_FORMAT_16BIT | \
-                                 AF_FORMAT_BE)
-
-#if BYTE_ORDER == BIG_ENDIAN
-#define AF_FORMAT_U16_NE AF_FORMAT_U16_BE
-#define AF_FORMAT_S16_NE AF_FORMAT_S16_BE
-#define AF_FORMAT_U24_NE AF_FORMAT_U24_BE
-#define AF_FORMAT_S24_NE AF_FORMAT_S24_BE
-#define AF_FORMAT_U32_NE AF_FORMAT_U32_BE
-#define AF_FORMAT_S32_NE AF_FORMAT_S32_BE
-#define AF_FORMAT_FLOAT_NE AF_FORMAT_FLOAT_BE
-#define AF_FORMAT_AC3_NE AF_FORMAT_AC3_BE
-#define AF_FORMAT_IEC61937_NE AF_FORMAT_IEC61937_BE
-#else
-#define AF_FORMAT_U16_NE AF_FORMAT_U16_LE
-#define AF_FORMAT_S16_NE AF_FORMAT_S16_LE
-#define AF_FORMAT_U24_NE AF_FORMAT_U24_LE
-#define AF_FORMAT_S24_NE AF_FORMAT_S24_LE
-#define AF_FORMAT_U32_NE AF_FORMAT_U32_LE
-#define AF_FORMAT_S32_NE AF_FORMAT_S32_LE
-#define AF_FORMAT_FLOAT_NE AF_FORMAT_FLOAT_LE
-#define AF_FORMAT_AC3_NE AF_FORMAT_AC3_LE
-#define AF_FORMAT_IEC61937_NE AF_FORMAT_IEC61937_LE
-#endif
-
-#define AF_FORMAT_UNKNOWN (-1)
-
-#define AF_FORMAT_IS_AC3(fmt) (((fmt) & AF_FORMAT_SPECIAL_MASK) == \
-                               AF_FORMAT_AC3)
-#define AF_FORMAT_IS_IEC61937(fmt) (((fmt) & AF_FORMAT_SPECIAL_MASK) == \
+//#define AF_FORMAT_UNKNOWN (-1)
+//
+//#define AF_FORMAT_IS_AC3(fmt) (((fmt) & AF_FORMAT_SPECIAL_MASK) == \
+//                               AF_FORMAT_AC3)
+//#define AF_FORMAT_IS_IEC61937(fmt) (((fmt) & AF_FORMAT_SPECIAL_MASK) == \
                                     AF_FORMAT_IEC61937)
-
-struct af_fmt_entry {
-    const char *name;
-    int format;
-};
-
-extern const struct af_fmt_entry af_fmtstr_table[];
-
 int af_str2fmt_short(bstr str);
 int af_fmt2bits(int format);
 int af_bits2fmt(int bits);

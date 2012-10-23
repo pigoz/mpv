@@ -26,6 +26,37 @@
 
 #include "af.h"
 
+
+#define DEF_FMT(X, b) \
+    [AF_FORMAT_##X####b##_LE] = { .bits = ##b##, .planar = 0, .endian = 0, }, \
+    [AF_FORMAT_##X####b##_BE] = { .bits = ##b##, .planar = 0, .endian = 1, }, \
+    [AF_FORMAT_##X####b##_LE] = { .bits = ##b##, .planar = 1, .endian = 0, }, \
+    [AF_FORMAT_##X####b##_BE] = { .bits = ##b##, .planar = 1, .endian = 1, },
+
+static const AFSampleFormatInfo sample_fmt_info[AF_FORMAT_NB] = {
+    DEF_FMT(U, 8)
+    DEF_FMT(S, 8)
+
+    DEF_FMT(U, 16),
+    DEF_FMT(S, 16),
+
+    DEF_FMT(U, 24),
+    DEF_FMT(S, 24),
+
+    DEF_FMT(S, 32),
+    DEF_FMT(S, 32),
+};
+
+#undef DEF_FMT
+
+/* Datatype for info storage */
+struct AFSampleFormatInfo {
+   enum AFSampleFormat format;
+   int  litte_endian;
+   int  planar;
+   int  bits;
+};
+
 int af_fmt2bits(int format)
 {
     if (AF_FORMAT_IS_AC3(format))
@@ -60,6 +91,11 @@ char *af_fmt2str(int format, char *str, int size)
         snprintf(str, size, "%#x", format);
     return str;
 }
+
+struct af_fmt_entry {
+    const char *name;
+    int format;
+};
 
 const struct af_fmt_entry af_fmtstr_table[] = {
     { "mulaw", AF_FORMAT_MU_LAW },
