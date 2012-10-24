@@ -39,6 +39,8 @@
 #import "gl_osd.h"
 #import "cocoa_common.h"
 
+#import <QuartzCore/CoreImage.h>
+
 struct quad {
     GLfloat lowerLeft[2];
     GLfloat lowerRight[2];
@@ -49,6 +51,9 @@ struct quad {
 struct priv {
     MPGLContext *mpglctx;
     OSType pixelFormat;
+
+    CIContext *cictx;
+
     unsigned int image_width;
     unsigned int image_height;
     struct mp_csp_details colorspace;
@@ -126,6 +131,40 @@ static int init_gl(struct vo *vo, uint32_t d_width, uint32_t d_height)
     return 1;
 }
 
+static void init_coreimage(struct vo *vo)
+{
+    struct priv *p = vo->priv;
+    if (p->cictx) return;
+
+    NSArray *keys   = [NSArray arrayWithObject:kCIContextWorkingColorSpace];
+    NSArray *values = [NSArray arrayWithObject:[NSNull null]];
+
+    NSDictionary *opts = [NSDictionary dictionaryWithObjects:values
+                                                     forKeys:keys];
+
+    p->cictx = [CIContext contextWithCGLContext:vo_cocoa_cgl_context()
+                                    pixelFormat:vo_cocoa_cgl_pixel_format()
+                                    colorSpace:nil
+                                       options:opts];
+}
+
+static CIImage *create_ciimage_from_texture(GLuint texture, size_t width,
+                                            size_t height)
+{
+    return [CIImage imageWithTexture:texture
+                                size:NSMakeSize(width, height)
+                             flipped:NO
+                          colorSpace:nil];
+}
+
+static CIFilter *setup_filter(CIImage *image, NSString *filter_name)
+{
+    CIFilter *f = [CIFilter filterWithName:filter_name];
+    [f setDefaults];
+    [f setValue:image forKey:kCIInputImageKey];
+    return f;
+}
+
 static void release_cv_entities(struct vo *vo) {
     struct priv *p = vo->priv;
     CVPixelBufferRelease(p->pixelBuffer);
@@ -150,6 +189,7 @@ static int config(struct vo *vo, uint32_t width, uint32_t height,
         return -1;
 
     init_gl(vo, vo->dwidth, vo->dheight);
+    init_coreimage(vo);
 
     return 0;
 }
@@ -182,35 +222,23 @@ static void prepare_texture(struct vo *vo)
 static void do_render(struct vo *vo)
 {
     struct priv *p = vo->priv;
-    struct quad *q = p->quad;
-    GL *gl = p->mpglctx->gl;
+
+    size_t w = CVPixelBufferGetWidth(p->pixelBuffer);
+    size_t h = CVPixelBufferGetHeight(p->pixelBuffer);
+    size_t tw = vo->aspdat.prew;
+    size_t th = vo->aspdat.preh;
+
     prepare_texture(vo);
 
-    float x0 = 0;
-    float y0 = 0;
-    float  w = p->image_width;
-    float  h = p->image_height;
+    CIImage *input_image = 
+        create_ciimage_from_texture(CVOpenGLTextureGetName(p->texture), w, h);
 
-    // vertically flips the image
-    y0 += h;
-    h = -h;
+    CIFilter *filter = setup_filter(input_image, @"CIBloom");
 
-    float xm = x0 + w;
-    float ym = y0 + h;
+    CIImage *output_image = [filter valueForKey:kCIOutputImageKey];
 
-    gl->Enable(CVOpenGLTextureGetTarget(p->texture));
-    gl->BindTexture(
-            CVOpenGLTextureGetTarget(p->texture),
-            CVOpenGLTextureGetName(p->texture));
-
-    gl->Begin(GL_QUADS);
-    gl->TexCoord2fv(q->lowerLeft);  gl->Vertex2f(x0, y0);
-    gl->TexCoord2fv(q->upperLeft);  gl->Vertex2f(x0, ym);
-    gl->TexCoord2fv(q->upperRight); gl->Vertex2f(xm, ym);
-    gl->TexCoord2fv(q->lowerRight); gl->Vertex2f(xm, y0);
-    gl->End();
-
-    gl->Disable(CVOpenGLTextureGetTarget(p->texture));
+    [p->cictx drawImage:output_image inRect:NSMakeRect(0, 0, w, h)
+                                   fromRect:NSMakeRect(0, 0, tw, th)];
 }
 
 static void flip_page(struct vo *vo)
