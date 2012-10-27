@@ -70,7 +70,7 @@ static void fput32le(uint32_t val, FILE *fp)
 static void write_wave_header(struct ao *ao, FILE *fp, uint64_t data_length)
 {
     bool use_waveex = ao->channels >= 5 && ao->channels <= 8;
-    uint16_t fmt = ao->format == AF_FORMAT_FLOAT_LE ?
+    uint16_t fmt = ao->format == AF_FORMAT_FLT_LE ?
         WAV_ID_FLOAT_PCM : WAV_ID_PCM;
     uint32_t fmt_chunk_size = use_waveex ? 40 : 16;
     int bits = af_fmt2bits(ao->format);
@@ -156,7 +156,7 @@ static int init(struct ao *ao, char *params)
         case AF_FORMAT_S16_LE:
         case AF_FORMAT_S24_LE:
         case AF_FORMAT_S32_LE:
-        case AF_FORMAT_FLOAT_LE:
+        case AF_FORMAT_FLT_LE:
         case AF_FORMAT_AC3_BE:
         case AF_FORMAT_AC3_LE:
              break;

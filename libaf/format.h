@@ -30,8 +30,11 @@
 #define DEF_FMT(x) x##_LE, x##_BE, x##P_LE, x##P_BE
 
 enum AFSampleFormat {
-    DEF_FMT(AF_FORMAT_U8),
-    DEF_FMT(AF_FORMAT_S8),
+    AF_FORMAT_U8,
+    AF_FORMAT_U8P,
+    AF_FORMAT_S8,
+    AF_FORMAT_S8P,
+
     DEF_FMT(AF_FORMAT_U16),
     DEF_FMT(AF_FORMAT_S16),
     DEF_FMT(AF_FORMAT_U24),
@@ -40,19 +43,77 @@ enum AFSampleFormat {
     DEF_FMT(AF_FORMAT_S32),
     DEF_FMT(AF_FORMAT_FLT),
 
-    AF_FORMAT_AC3,
+    AF_FORMAT_MU_LAW,
+    AF_FORMAT_A_LAW,
+    AF_FORMAT_MPEG2,          // MPEG(2) audio
+    AF_FORMAT_AC3_BE,         // Dolby Digital AC3
+    AF_FORMAT_AC3_LE,         // Dolby Digital AC3
+    AF_FORMAT_IMA_ADPCM,
     AF_FORMAT_IEC61937,
 
     AF_FORMAT_NB,
 };
 
+enum AFSampleEncoding {
+    AF_PCM,
+    AF_AC3,
+    AF_IEC61937,
+}
+
+// the following is going to be ugly: be prepared
+
+#if BYTE_ORDER == BIG_ENDIAN
+#define AF_FORMAT_U16     AF_FORMAT_U16_BE
+#define AF_FORMAT_S16     AF_FORMAT_S16_BE
+#define AF_FORMAT_U24     AF_FORMAT_U24_BE
+#define AF_FORMAT_S24     AF_FORMAT_S24_BE
+#define AF_FORMAT_U32     AF_FORMAT_U32_BE
+#define AF_FORMAT_S32     AF_FORMAT_S32_BE
+#define AF_FORMAT_FLT     AF_FORMAT_FLT_BE
+#define AF_FORMAT_AC3     AF_FORMAT_AC3_BE
+
+#define AF_FORMAT_U16P    AF_FORMAT_U16P_BE
+#define AF_FORMAT_S16P    AF_FORMAT_S16P_BE
+#define AF_FORMAT_U24P    AF_FORMAT_U24P_BE
+#define AF_FORMAT_S24P    AF_FORMAT_S24P_BE
+#define AF_FORMAT_U32P    AF_FORMAT_U32P_BE
+#define AF_FORMAT_S32P    AF_FORMAT_S32P_BE
+#define AF_FORMAT_FLTP    AF_FORMAT_FLTP_BE
+#define AF_FORMAT_AC3P    AF_FORMAT_AC3P_BE
+#else
+#define AF_FORMAT_U16     AF_FORMAT_U16_LE
+#define AF_FORMAT_S16     AF_FORMAT_S16_LE
+#define AF_FORMAT_U24     AF_FORMAT_U24_LE
+#define AF_FORMAT_S24     AF_FORMAT_S24_LE
+#define AF_FORMAT_U32     AF_FORMAT_U32_LE
+#define AF_FORMAT_S32     AF_FORMAT_S32_LE
+#define AF_FORMAT_FLT     AF_FORMAT_FLT_LE
+#define AF_FORMAT_AC3     AF_FORMAT_AC3_LE
+
+#define AF_FORMAT_U16P    AF_FORMAT_U16P_LE
+#define AF_FORMAT_S16P    AF_FORMAT_S16P_LE
+#define AF_FORMAT_U24P    AF_FORMAT_U24P_LE
+#define AF_FORMAT_S24P    AF_FORMAT_S24P_LE
+#define AF_FORMAT_U32P    AF_FORMAT_U32P_LE
+#define AF_FORMAT_S32P    AF_FORMAT_S32P_LE
+#define AF_FORMAT_FLTP    AF_FORMAT_FLTP_LE
+#define AF_FORMAT_AC3P    AF_FORMAT_AC3P_LE
+#endif
+
 #undef DEF_FMT
 
-int af_format_bits(enum AFSampleFromat format);
-int af_format_le(enum AFSampleFromat format);
-int af_format_be(enum AFSampleFromat format);
-int af_format_planar(enum AFSampleFromat format);
-const char *af_format_name(enum AFSampleFromat format);
+int af_format_bits(enum AFSampleFormat format);
+int af_format_us(enum AFSampleFormat format);
+int af_format_le(enum AFSampleFormat format);
+int af_format_be(enum AFSampleFormat format);
+int af_format_planar(enum AFSampleFormat format);
+int af_format_special(enum AFSampleFormat format);
+
+enum AFSampleEncoding af_format_encoding(enum AFSampleFormat format);
+int af_format_ac3(enum AFSampleFormat format);
+int af_format_iec61937(enum AFSampleFormat format);
+
+const char *af_format_name(enum AFSampleFormat format);
 
 //// Signed/unsigned
 //#define AF_FORMAT_SI            (0 << 1) // Signed

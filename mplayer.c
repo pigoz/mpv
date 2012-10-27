@@ -2082,7 +2082,7 @@ static int audio_start_sync(struct MPContext *mpctx, int playsize)
         // Don't add silence in audio-only case even if position is too late
         return 0;
     int fillbyte = 0;
-    if ((ao->format & AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
+    if (af_format_us(ao->format))
         fillbyte = 0x80;
     if (bytes >= playsize) {
         /* This case could fall back to the one below with
@@ -2110,7 +2110,7 @@ static int fill_audio_out_buffers(struct MPContext *mpctx, double endpts)
     bool audio_eof = false;
     bool partial_fill = false;
     sh_audio_t * const sh_audio = mpctx->sh_audio;
-    bool modifiable_audio_format = !(ao->format & AF_FORMAT_SPECIAL_MASK);
+    bool modifiable_audio_format = !af_format_special(ao->format);
     int unitsize = ao->channels * af_fmt2bits(ao->format) / 8;
 
     // hack used by some mpeg-writing AOs

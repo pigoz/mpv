@@ -49,9 +49,19 @@ static const AFSampleFormatInfo sample_fmt_info[AF_FORMAT_NB] = {
 
 #undef DEF_FMT
 
+enum AFSampleEncoding {
+    AF_LPCM,
+    AF_PCM_ALAW,
+    AF_PCM_MULAW,
+    AF_AC3,
+    AF_IMA_ADPCM,
+    AF_IEC61937,
+}
+
 /* Datatype for info storage */
 struct AFSampleFormatInfo {
    enum AFSampleFormat format;
+   enum AFSampleEncoding encoding;
    int  litte_endian;
    int  planar;
    int  bits;
