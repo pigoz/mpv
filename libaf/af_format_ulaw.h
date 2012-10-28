@@ -741,11 +741,11 @@ static int from_ulaw(void *in, void *out, int len, int bps, int format)
 {
     register int i;
     // Make sure the input parametrs are OK
-    if (format & (AF_FORMAT_SPECIAL_MASK | AF_FORMAT_US))
+    if (af_format_is_special(format) || af_format_is_unsigned(format))
         return AF_ERROR;
 
     // Convert to int or to float
-    if ((format & AF_FORMAT_POINT_MASK) == AF_FORMAT_I) {
+    if (af_format_is_integer(format)) {
         switch (bps) {
         case (1):
             for (i = 0; i < len; i++) {
@@ -801,11 +801,11 @@ static int to_ulaw(void *in, void *out, int len, int bps, int format)
 {
     register int i;
     // Make sure the input parametrs are OK
-    if (format & (AF_FORMAT_SPECIAL_MASK | AF_FORMAT_US))
+    if (af_format_is_special(format) || af_format_is_unsigned(format))
         return AF_ERROR;
 
     // Convert from int or to float
-    if ((format & AF_FORMAT_POINT_MASK) == AF_FORMAT_I) {
+    if (af_format_is_integer(format)) {
         switch (bps) {
         case (1):
             for (i = 0; i < len; i++) {

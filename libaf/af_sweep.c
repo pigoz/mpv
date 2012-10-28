@@ -42,7 +42,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   switch(cmd){
   case AF_CONTROL_REINIT:
     af->data->nch    = data->nch;
-    af->data->format = AF_FORMAT_S16_NE;
+    af->data->format = AF_FORMAT_S16;
     af->data->bps    = 2;
     af->data->rate   = data->rate;
 

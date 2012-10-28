@@ -68,7 +68,7 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
 
     switch (cmd){
     case AF_CONTROL_REINIT:
-        if (AF_FORMAT_IS_AC3(data->format) || data->nch < s->min_channel_num)
+        if (af_format_is_ac3(data->format) || data->nch < s->min_channel_num)
             return AF_DETACH;
 
         af->data->format = s->in_sampleformat;
@@ -303,11 +303,11 @@ static int af_open(af_instance_t* af){
                    "support expected sample formats!\n");
             return AF_ERROR;
         } else if (fmts[i] == AV_SAMPLE_FMT_S16) {
-            s->in_sampleformat = AF_FORMAT_S16_NE;
+            s->in_sampleformat = AF_FORMAT_S16;
             s->lavc_actx->sample_fmt = fmts[i];
             break;
         } else if (fmts[i] == AV_SAMPLE_FMT_FLT) {
-            s->in_sampleformat = AF_FORMAT_FLOAT_NE;
+            s->in_sampleformat = AF_FORMAT_FLT;
             s->lavc_actx->sample_fmt = fmts[i];
             break;
         }

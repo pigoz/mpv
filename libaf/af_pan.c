@@ -45,7 +45,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     if(!arg) return AF_ERROR;
 
     af->data->rate   = ((af_data_t*)arg)->rate;
-    af->data->format = AF_FORMAT_FLOAT_NE;
+    af->data->format = AF_FORMAT_FLT;
     af->data->bps    = 4;
     af->data->nch    = s->nch ? s->nch: ((af_data_t*)arg)->nch;
     af->mul          = (double)af->data->nch / ((af_data_t*)arg)->nch;

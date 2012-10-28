@@ -69,8 +69,8 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     af->data->rate   = ((af_data_t*)arg)->rate;
     af->data->nch    = ((af_data_t*)arg)->nch;
 
-    if(s->fast && (((af_data_t*)arg)->format != (AF_FORMAT_FLOAT_NE))){
-      af->data->format = AF_FORMAT_S16_NE;
+    if(s->fast && (((af_data_t*)arg)->format != (AF_FORMAT_FLT))){
+      af->data->format = AF_FORMAT_S16;
       af->data->bps    = 2;
     }
     else{
@@ -79,7 +79,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       float t = 2.0-cos(x);
       s->time = 1.0 - (t - sqrt(t*t - 1));
       mp_msg(MSGT_AFILTER, MSGL_DBG2, "[volume] Forgetting factor = %0.5f\n",s->time);
-      af->data->format = AF_FORMAT_FLOAT_NE;
+      af->data->format = AF_FORMAT_FLT;
       af->data->bps    = 4;
     }
     return af_test_output(af,(af_data_t*)arg);
@@ -146,7 +146,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
   register int  i   = 0;
 
   // Basic operation volume control only (used on slow machines)
-  if(af->data->format == (AF_FORMAT_S16_NE)){
+  if(af->data->format == (AF_FORMAT_S16)){
     int16_t*    a   = (int16_t*)c->audio;	// Audio data
     int         len = c->len/2;			// Number of samples
     for (int ch = 0; ch < nch; ch++) {
@@ -160,7 +160,7 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     }
   }
   // Machine is fast and data is floating point
-  else if(af->data->format == (AF_FORMAT_FLOAT_NE)){
+  else if(af->data->format == (AF_FORMAT_FLT)){
     float*   	a   	= (float*)c->audio;	// Audio data
     int       	len 	= c->len/4;		// Number of samples
     for (int ch = 0; ch < nch; ch++) {

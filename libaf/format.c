@@ -49,15 +49,6 @@ static const AFSampleFormatInfo sample_fmt_info[AF_FORMAT_NB] = {
 
 #undef DEF_FMT
 
-enum AFSampleEncoding {
-    AF_LPCM,
-    AF_PCM_ALAW,
-    AF_PCM_MULAW,
-    AF_AC3,
-    AF_IMA_ADPCM,
-    AF_IEC61937,
-}
-
 /* Datatype for info storage */
 struct AFSampleFormatInfo {
    enum AFSampleFormat format;
@@ -105,45 +96,6 @@ char *af_fmt2str(int format, char *str, int size)
 struct af_fmt_entry {
     const char *name;
     int format;
-};
-
-const struct af_fmt_entry af_fmtstr_table[] = {
-    { "mulaw", AF_FORMAT_MU_LAW },
-    { "alaw", AF_FORMAT_A_LAW },
-    { "mpeg2", AF_FORMAT_MPEG2 },
-    { "ac3le", AF_FORMAT_AC3_LE },
-    { "ac3be", AF_FORMAT_AC3_BE },
-    { "ac3ne", AF_FORMAT_AC3_NE },
-    { "iec61937le", AF_FORMAT_IEC61937_LE },
-    { "iec61937be", AF_FORMAT_IEC61937_BE },
-    { "iec61937ne", AF_FORMAT_IEC61937_NE },
-    { "imaadpcm", AF_FORMAT_IMA_ADPCM },
-
-    { "u8", AF_FORMAT_U8 },
-    { "s8", AF_FORMAT_S8 },
-    { "u16le", AF_FORMAT_U16_LE },
-    { "u16be", AF_FORMAT_U16_BE },
-    { "u16ne", AF_FORMAT_U16_NE },
-    { "s16le", AF_FORMAT_S16_LE },
-    { "s16be", AF_FORMAT_S16_BE },
-    { "s16ne", AF_FORMAT_S16_NE },
-    { "u24le", AF_FORMAT_U24_LE },
-    { "u24be", AF_FORMAT_U24_BE },
-    { "u24ne", AF_FORMAT_U24_NE },
-    { "s24le", AF_FORMAT_S24_LE },
-    { "s24be", AF_FORMAT_S24_BE },
-    { "s24ne", AF_FORMAT_S24_NE },
-    { "u32le", AF_FORMAT_U32_LE },
-    { "u32be", AF_FORMAT_U32_BE },
-    { "u32ne", AF_FORMAT_U32_NE },
-    { "s32le", AF_FORMAT_S32_LE },
-    { "s32be", AF_FORMAT_S32_BE },
-    { "s32ne", AF_FORMAT_S32_NE },
-    { "floatle", AF_FORMAT_FLOAT_LE },
-    { "floatbe", AF_FORMAT_FLOAT_BE },
-    { "floatne", AF_FORMAT_FLOAT_NE },
-
-    {0}
 };
 
 const char *af_fmt2str_short(int format)

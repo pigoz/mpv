@@ -65,7 +65,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     }// else
 #endif
     {
-	af->data->format = AF_FORMAT_S16_NE;
+	af->data->format = AF_FORMAT_S16;
 	af->data->bps = 2;
 	af->play = play_s16;
     }

@@ -483,7 +483,7 @@ int device_id, display_help = 0;
     ao_msg(MSGT_AO,MSGL_V, "got audio output device ID: %"PRIu32" Name: %s\n", devid_def, psz_name );
 
     /* Probe whether device support S/PDIF stream output if input is AC3 stream. */
-    if (AF_FORMAT_IS_AC3(format)) {
+    if (af_format_is_ac3(format)) {
         if (AudioDeviceSupportsDigital(devid_def))
         {
             ao->b_supports_digital = 1;
@@ -504,11 +504,11 @@ int device_id, display_help = 0;
 	inDesc.mChannelsPerFrame=channels;
 	inDesc.mBitsPerChannel=af_fmt2bits(format);
 
-    if((format&AF_FORMAT_POINT_MASK)==AF_FORMAT_F) {
+    if(af_format_is_float(format)) {
 	// float
 		inDesc.mFormatFlags = kAudioFormatFlagIsFloat|kAudioFormatFlagIsPacked;
     }
-    else if((format&AF_FORMAT_SIGN_MASK)==AF_FORMAT_SI) {
+    else if(af_format_is_signed(format)) {
 	// signed int
 		inDesc.mFormatFlags = kAudioFormatFlagIsSignedInteger|kAudioFormatFlagIsPacked;
     }
@@ -516,7 +516,7 @@ int device_id, display_help = 0;
 	// unsigned int
 		inDesc.mFormatFlags = kAudioFormatFlagIsPacked;
     }
-    if ((format & AF_FORMAT_END_MASK) == AF_FORMAT_BE)
+    if (af_format_is_be(format))
         inDesc.mFormatFlags |= kAudioFormatFlagIsBigEndian;
 
     inDesc.mFramesPerPacket = 1;

@@ -74,10 +74,12 @@ static int check_bps(int bps)
 static int check_format(int format)
 {
   char buf[256];
-  switch(format & AF_FORMAT_SPECIAL_MASK){
+
+  switch(format){
   case(AF_FORMAT_IMA_ADPCM):
   case(AF_FORMAT_MPEG2):
-  case(AF_FORMAT_AC3):
+  case(AF_FORMAT_AC3_LE):
+  case(AF_FORMAT_AC3_BE):
     mp_msg(MSGT_AFILTER, MSGL_ERR, "[format] Sample format %s not yet supported \n",
 	 af_fmt2str(format,buf,256));
     return AF_ERROR;
@@ -100,7 +102,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       return AF_DETACH;
 
     // Allow trivial AC3-endianness conversion
-    if (!AF_FORMAT_IS_AC3(af->data->format) || !AF_FORMAT_IS_AC3(data->format))
+    if (!af_format_is_ac3(af->data->format) || !af_format_is_ac3(data->format))
     // Check for errors in configuration
     if((AF_OK != check_bps(data->bps)) ||
        (AF_OK != check_format(data->format)) ||
@@ -119,22 +121,21 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     af->play = play; // set default
 
     // look whether only endianness differences are there
-    if ((af->data->format & ~AF_FORMAT_END_MASK) ==
-	(data->format & ~AF_FORMAT_END_MASK))
+    if (af->data->format == af_format_swapped(data->format))
     {
 	mp_msg(MSGT_AFILTER, MSGL_V, "[format] Accelerated endianness conversion only\n");
 	af->play = play_swapendian;
     }
-    if ((data->format == AF_FORMAT_FLOAT_NE) &&
-	(af->data->format == AF_FORMAT_S16_NE))
+    if ((data->format == AF_FORMAT_FLT) &&
+	(af->data->format == AF_FORMAT_S16))
     {
 	mp_msg(MSGT_AFILTER, MSGL_V, "[format] Accelerated %s to %s conversion\n",
 	   af_fmt2str(data->format,buf1,256),
 	   af_fmt2str(af->data->format,buf2,256));
 	af->play = play_float_s16;
     }
-    if ((data->format == AF_FORMAT_S16_NE) &&
-	(af->data->format == AF_FORMAT_FLOAT_NE))
+    if ((data->format == AF_FORMAT_S16) &&
+	(af->data->format == AF_FORMAT_FLT))
     {
 	mp_msg(MSGT_AFILTER, MSGL_V, "[format] Accelerated %s to %s conversion\n",
 	   af_fmt2str(data->format,buf1,256),
@@ -155,7 +156,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   }
   case AF_CONTROL_FORMAT_FMT | AF_CONTROL_SET:{
     // Check for errors in configuration
-    if(!AF_FORMAT_IS_AC3(*(int*)arg) && AF_OK != check_format(*(int*)arg))
+    if(!af_format_is_ac3(*(int*)arg) && AF_OK != check_format(*(int*)arg))
       return AF_ERROR;
 
     af->data->format = *(int*)arg;
@@ -242,33 +243,33 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     return NULL;
 
   // Change to cpu native endian format
-  if((c->format&AF_FORMAT_END_MASK)!=AF_FORMAT_NE)
+  if(! af_format_is_ne(c->format))
     endian(c->audio,c->audio,len,c->bps);
 
   // Conversion table
-  if((c->format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_MU_LAW) {
-    from_ulaw(c->audio, l->audio, len, l->bps, l->format&AF_FORMAT_POINT_MASK);
-    if(AF_FORMAT_A_LAW == (l->format&AF_FORMAT_SPECIAL_MASK))
-      to_ulaw(l->audio, l->audio, len, 1, AF_FORMAT_SI);
-    if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
+  if(c->format == AF_FORMAT_MU_LAW) {
+    from_ulaw(c->audio, l->audio, len, l->bps, l->format);
+    if(AF_FORMAT_A_LAW == l->format)
+      to_ulaw(l->audio, l->audio, len, 1, AF_FORMAT_S16);
+    if(af_format_is_unsigned(l->format))
       si2us(l->audio,len,l->bps);
-  } else if((c->format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_A_LAW) {
-    from_alaw(c->audio, l->audio, len, l->bps, l->format&AF_FORMAT_POINT_MASK);
-    if(AF_FORMAT_A_LAW == (l->format&AF_FORMAT_SPECIAL_MASK))
-      to_alaw(l->audio, l->audio, len, 1, AF_FORMAT_SI);
-    if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
+  } else if(c->format == AF_FORMAT_A_LAW) {
+    from_alaw(c->audio, l->audio, len, l->bps, l->format);
+    if(AF_FORMAT_A_LAW == l->format)
+      to_alaw(l->audio, l->audio, len, 1, AF_FORMAT_S16);
+    if(af_format_is_unsigned(l->format))
       si2us(l->audio,len,l->bps);
-  } else if((c->format & AF_FORMAT_POINT_MASK) == AF_FORMAT_F) {
-    switch(l->format&AF_FORMAT_SPECIAL_MASK){
+  } else if(af_format_is_float(c->format)) {
+    switch(l->format){
     case(AF_FORMAT_MU_LAW):
-      to_ulaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_ulaw(c->audio, l->audio, len, c->bps, c->format);
       break;
     case(AF_FORMAT_A_LAW):
-      to_alaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_alaw(c->audio, l->audio, len, c->bps, c->format);
       break;
     default:
       float2int(c->audio, l->audio, len, l->bps);
-      if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
+      if(af_format_is_unsigned(l->format))
 	si2us(l->audio,len,l->bps);
       break;
     }
@@ -276,32 +277,28 @@ static af_data_t* play(struct af_instance_s* af, af_data_t* data)
     // Input must be int
 
     // Change signed/unsigned
-    if((c->format&AF_FORMAT_SIGN_MASK) != (l->format&AF_FORMAT_SIGN_MASK)){
+    if(c->format == af_format_alternate(l->format)){
       si2us(c->audio,len,c->bps);
     }
     // Convert to special formats
-    switch(l->format&(AF_FORMAT_SPECIAL_MASK|AF_FORMAT_POINT_MASK)){
-    case(AF_FORMAT_MU_LAW):
-      to_ulaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
-      break;
-    case(AF_FORMAT_A_LAW):
-      to_alaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
-      break;
-    case(AF_FORMAT_F):
-      int2float(c->audio, l->audio, len, c->bps);
-      break;
-    default:
-      // Change the number of bits
-      if(c->bps != l->bps)
-	change_bps(c->audio,l->audio,len,c->bps,l->bps);
-      else
-	fast_memcpy(l->audio,c->audio,len*c->bps);
-      break;
+    if (af_format_is_special(l->format)){
+      if (l->format == AF_FORMAT_MU_LAW)
+          to_ulaw(c->audio, l->audio, len, c->bps, c->format);
+      else if (l->format == AF_FORMAT_A_LAW) 
+          to_alaw(c->audio, l->audio, len, c->bps, c->format);
+      else if (af_format_is_float(l->format))
+          int2float(c->audio, l->audio, len, c->bps);
+      else {
+        if (c->bps != l->bps)
+          change_bps(c->audio,l->audio,len,c->bps,l->bps);
+        else
+          fast_memcpy(l->audio,c->audio,len*c->bps);
+      }
     }
   }
 
   // Switch from cpu native endian to the correct endianness
-  if((l->format&AF_FORMAT_END_MASK)!=AF_FORMAT_NE)
+  if (!af_format_is_ne(l->format))
     endian(l->audio,l->audio,len,l->bps);
 
   // Set output data

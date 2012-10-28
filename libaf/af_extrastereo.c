@@ -49,14 +49,14 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 
     af->data->rate   = ((af_data_t*)arg)->rate;
     af->data->nch    = 2;
-    if (((af_data_t*)arg)->format == AF_FORMAT_FLOAT_NE)
+    if (((af_data_t*)arg)->format == AF_FORMAT_FLT)
     {
-	af->data->format = AF_FORMAT_FLOAT_NE;
+	af->data->format = AF_FORMAT_FLT;
 	af->data->bps = 4;
 	af->play = play_float;
     }// else
     {
-	af->data->format = AF_FORMAT_S16_NE;
+	af->data->format = AF_FORMAT_S16;
 	af->data->bps = 2;
 	af->play = play_s16;
     }

@@ -308,7 +308,7 @@ static int control(struct af_instance_s *af, int cmd, void* arg)
 	    }
 	    else if (af->data->nch < 5)
 	      af->data->nch = 5;
-	af->data->format = AF_FORMAT_S16_NE;
+	af->data->format = AF_FORMAT_S16;
 	af->data->bps    = 2;
 	test_output_res = af_test_output(af, (af_data_t*)arg);
 	af->mul = 2.0 / af->data->nch;

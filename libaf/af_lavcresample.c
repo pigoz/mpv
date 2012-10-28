@@ -63,7 +63,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 
     af->data->nch    = data->nch;
     if (af->data->nch > AF_NCH) af->data->nch = AF_NCH;
-    af->data->format = AF_FORMAT_S16_NE;
+    af->data->format = AF_FORMAT_S16;
     af->data->bps    = 2;
     af->mul = (double)af->data->rate / data->rate;
     af->delay = af->data->nch * s->filter_length / min(af->mul, 1); // *bps*.5
@@ -82,7 +82,6 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 
     // hack to make af_test_output ignore the samplerate change
     out_rate = af->data->rate;
-    af->data->rate = data->rate;
     test_output_res = af_test_output(af, (af_data_t*)arg);
     af->data->rate = out_rate;
     return test_output_res;

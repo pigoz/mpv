@@ -56,7 +56,7 @@ struct priv {
     int64_t lastpts;
     int sample_size;
     const void *sample_padding;
-    double expected_next_pts;
+    double expectedxt_pts;
 
     AVRational worst_time_base;
     int worst_time_base_is_stream;
@@ -128,9 +128,9 @@ static int init(struct ao *ao, char *params)
                     goto out_search;
                 break;
             case AV_SAMPLE_FMT_FLT:
-                if (ao->format == AF_FORMAT_FLOAT_BE)
+                if (ao->format == AF_FORMAT_FLT_BE)
                     goto out_search;
-                if (ao->format == AF_FORMAT_FLOAT_LE)
+                if (ao->format == AF_FORMAT_FLT_LE)
                     goto out_search;
                 break;
             default:
@@ -154,13 +154,13 @@ out_search:
                 ao->format = AF_FORMAT_U8;
                 goto out_takefirst;
             case AV_SAMPLE_FMT_S16:
-                ao->format = AF_FORMAT_S16_NE;
+                ao->format = AF_FORMAT_S16;
                 goto out_takefirst;
             case AV_SAMPLE_FMT_S32:
-                ao->format = AF_FORMAT_S32_NE;
+                ao->format = AF_FORMAT_S32;
                 goto out_takefirst;
             case AV_SAMPLE_FMT_FLT:
-                ao->format = AF_FORMAT_FLOAT_NE;
+                ao->format = AF_FORMAT_FLT;
                 goto out_takefirst;
             default:
                 break;
@@ -186,21 +186,21 @@ out_takefirst:
         ac->stream->codec->sample_fmt = AV_SAMPLE_FMT_S16;
         ac->sample_size = 2;
         ac->sample_padding = sample_padding_signed;
-        ao->format = AF_FORMAT_S16_NE;
+        ao->format = AF_FORMAT_S16;
         break;
     case AF_FORMAT_S32_BE:
     case AF_FORMAT_S32_LE:
         ac->stream->codec->sample_fmt = AV_SAMPLE_FMT_S32;
         ac->sample_size = 4;
         ac->sample_padding = sample_padding_signed;
-        ao->format = AF_FORMAT_S32_NE;
+        ao->format = AF_FORMAT_S32;
         break;
-    case AF_FORMAT_FLOAT_BE:
-    case AF_FORMAT_FLOAT_LE:
+    case AF_FORMAT_FLT_BE:
+    case AF_FORMAT_FLT_LE:
         ac->stream->codec->sample_fmt = AV_SAMPLE_FMT_FLT;
         ac->sample_size = 4;
         ac->sample_padding = sample_padding_float;
-        ao->format = AF_FORMAT_FLOAT_NE;
+        ao->format = AF_FORMAT_FLT;
         break;
     }
 
@@ -461,7 +461,7 @@ static int play(struct ao *ao, void *data, int len, int flags)
     if (pts == MP_NOPTS_VALUE) {
         mp_msg(MSGT_ENCODE, MSGL_WARN, "ao-lavc: frame without pts, please report; synthesizing pts instead\n");
         // synthesize pts from previous expected next pts
-        pts = ac->expected_next_pts;
+        pts = ac->expectedxt_pts;
     }
 
     if (ac->worst_time_base.den == 0) {
@@ -585,11 +585,11 @@ static int play(struct ao *ao, void *data, int len, int flags)
     talloc_free(paddingbuf);
 
     // calculate expected pts of next audio frame
-    ac->expected_next_pts = pts + (bufpos + ptsoffset) / (double) ao->samplerate;
+    ac->expectedxt_pts = pts + (bufpos + ptsoffset) / (double) ao->samplerate;
 
     if (!ectx->options->rawts && ectx->options->copyts) {
         // set next allowed output pts value
-        nextpts = ac->expected_next_pts + ectx->discontinuity_pts_offset;
+        nextpts = ac->expectedxt_pts + ectx->discontinuity_pts_offset;
         if (nextpts > ectx->next_in_pts)
             ectx->next_in_pts = nextpts;
     }

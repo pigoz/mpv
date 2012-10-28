@@ -314,10 +314,10 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     if ( data->format == AF_FORMAT_S16_LE
          || data->format == AF_FORMAT_S16_BE ) {
       use_int = 1;
-      af->data->format  = AF_FORMAT_S16_NE;
+      af->data->format  = AF_FORMAT_S16;
       af->data->bps     = bps = 2;
     } else {
-      af->data->format = AF_FORMAT_FLOAT_NE;
+      af->data->format = AF_FORMAT_FLT;
       af->data->bps    = bps = 4;
     }
 
