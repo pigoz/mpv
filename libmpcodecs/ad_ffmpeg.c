@@ -75,10 +75,10 @@ static int setup_format(sh_audio_t *sh_audio,
 {
     int sample_format = sh_audio->sample_format;
     switch (av_get_packed_sample_fmt(lavc_context->sample_fmt)) {
-    case AV_SAMPLE_FMT_U8:  sample_format = AF_FORMAT_U8;       break;
-    case AV_SAMPLE_FMT_S16: sample_format = AF_FORMAT_S16_NE;   break;
-    case AV_SAMPLE_FMT_S32: sample_format = AF_FORMAT_S32_NE;   break;
-    case AV_SAMPLE_FMT_FLT: sample_format = AF_FORMAT_FLOAT_NE; break;
+    case AV_SAMPLE_FMT_U8:  sample_format = AF_FORMAT_U8;  break;
+    case AV_SAMPLE_FMT_S16: sample_format = AF_FORMAT_S16; break;
+    case AV_SAMPLE_FMT_S32: sample_format = AF_FORMAT_S32; break;
+    case AV_SAMPLE_FMT_FLT: sample_format = AF_FORMAT_FLT; break;
     default:
         mp_msg(MSGT_DECAUDIO, MSGL_FATAL, "Unsupported sample format\n");
         sample_format = AF_FORMAT_UNKNOWN;

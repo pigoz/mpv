@@ -26,54 +26,51 @@
 
 #include "af.h"
 
+struct AFSampleFormatInfo {
+   enum AFFormat format;
+   int  bits;
+   int  planar;
+   int  endian;
+};
 
+struct AFSampleFormatRelations {
+   enum AFFormat format;
+   enum AFFormat alternate;
+   enum AFFormat swapped;
+   enum AFFormat altplanar;
+};
+
+// define sample format attributes for common lpcm formats
 #define DEF_FMT(X, b) \
-    [AF_FORMAT_##X####b##_LE] = { .bits = ##b##, .planar = 0, .endian = 0, }, \
-    [AF_FORMAT_##X####b##_BE] = { .bits = ##b##, .planar = 0, .endian = 1, }, \
-    [AF_FORMAT_##X####b##_LE] = { .bits = ##b##, .planar = 1, .endian = 0, }, \
-    [AF_FORMAT_##X####b##_BE] = { .bits = ##b##, .planar = 1, .endian = 1, },
+    [AF_FORMAT_##X##b##_LE]  = { .bits = b, .planar = 0, .endian = 0, }, \
+    [AF_FORMAT_##X##b##_BE]  = { .bits = b, .planar = 0, .endian = 1, }, \
+    [AF_FORMAT_##X##b##P_LE] = { .bits = b, .planar = 1, .endian = 0, }, \
+    [AF_FORMAT_##X##b##P_BE] = { .bits = b, .planar = 1, .endian = 1, },
 
-static const AFSampleFormatInfo sample_fmt_info[AF_FORMAT_NB] = {
-    DEF_FMT(U, 8)
-    DEF_FMT(S, 8)
+static const struct AFSampleFormatInfo sample_fmt_info[AF_FORMAT_NB] = {
+    [AF_FORMAT_U8]  = { .bits = 8, .planar = 0, .endian = -1, }, \
+    [AF_FORMAT_S8]  = { .bits = 8, .planar = 0, .endian = -1, }, \
+    [AF_FORMAT_U8P] = { .bits = 8, .planar = 1, .endian = -1, }, \
+    [AF_FORMAT_S8P] = { .bits = 8, .planar = 1, .endian = -1, }, \
 
-    DEF_FMT(U, 16),
-    DEF_FMT(S, 16),
+    DEF_FMT(U, 16)
+    DEF_FMT(S, 16)
 
-    DEF_FMT(U, 24),
-    DEF_FMT(S, 24),
+    DEF_FMT(U, 24)
+    DEF_FMT(S, 24)
 
-    DEF_FMT(S, 32),
-    DEF_FMT(S, 32),
+    DEF_FMT(U, 32)
+    DEF_FMT(S, 32)
+
+    [AF_FORMAT_AC3_LE] = { .bits = 16, .planar = 1, .endian = 0 },
+    [AF_FORMAT_AC3_BE] = { .bits = 16, .planar = 1, .endian = 1 },
 };
 
 #undef DEF_FMT
 
-/* Datatype for info storage */
-struct AFSampleFormatInfo {
-   enum AFSampleFormat format;
-   enum AFSampleEncoding encoding;
-   int  litte_endian;
-   int  planar;
-   int  bits;
-};
-
 int af_fmt2bits(int format)
 {
-    if (AF_FORMAT_IS_AC3(format))
-        return 16;
-    return (format & AF_FORMAT_BITS_MASK) + 8;
-//    return (((format & AF_FORMAT_BITS_MASK)>>3)+1) * 8;
-#if 0
-    switch (format & AF_FORMAT_BITS_MASK) {
-    case AF_FORMAT_8BIT: return 8;
-    case AF_FORMAT_16BIT: return 16;
-    case AF_FORMAT_24BIT: return 24;
-    case AF_FORMAT_32BIT: return 32;
-    case AF_FORMAT_48BIT: return 48;
-    }
-#endif
-    return -1;
+    return sample_fmt_info[format].bits;
 }
 
 int af_bits2fmt(int bits)
@@ -93,11 +90,6 @@ char *af_fmt2str(int format, char *str, int size)
     return str;
 }
 
-struct af_fmt_entry {
-    const char *name;
-    int format;
-};
-
 const char *af_fmt2str_short(int format)
 {
     int i;
@@ -111,7 +103,7 @@ const char *af_fmt2str_short(int format)
 
 static bool af_fmt_valid(int format)
 {
-    return (format & AF_FORMAT_MASK) == format;
+    return format > AF_FORMAT_UNKNOWN && format < AF_FORMAT_NB;
 }
 
 int af_str2fmt_short(bstr str)

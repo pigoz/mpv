@@ -380,18 +380,18 @@ static int init(sh_audio_t *sh)
             sh->samplesize    = 1;
             break;
         case MPG123_ENC_SIGNED_16:
-            sh->sample_format = AF_FORMAT_S16_NE;
+            sh->sample_format = AF_FORMAT_S16;
             sh->samplesize    = 2;
             break;
         /* To stay compatible with the oldest libmpg123 headers, do not rely
          * on float and 32 bit encoding symbols being defined.
          * Those formats came later */
         case 0x1180: /* MPG123_ENC_SIGNED_32 */
-            sh->sample_format = AF_FORMAT_S32_NE;
+            sh->sample_format = AF_FORMAT_S32;
             sh->samplesize    = 4;
             break;
         case 0x200: /* MPG123_ENC_FLOAT_32 */
-            sh->sample_format = AF_FORMAT_FLOAT_NE;
+            sh->sample_format = AF_FORMAT_FLT;
             sh->samplesize    = 4;
             break;
         default:

@@ -86,7 +86,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Accept only int16_t as input format (which sucks)
     af->data->rate   = ((af_data_t*)arg)->rate;
     af->data->nch    = ((af_data_t*)arg)->nch;
-    af->data->format = AF_FORMAT_S16_NE;
+    af->data->format = AF_FORMAT_S16;
     af->data->bps    = 2;
 
     // If buffer length isn't set, set it to the default value

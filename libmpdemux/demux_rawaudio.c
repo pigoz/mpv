@@ -33,7 +33,7 @@
 
 static int channels = 2;
 static int samplerate = 44100;
-static int format = AF_FORMAT_S16_NE;
+static int format = AF_FORMAT_S16;
 
 const m_option_t demux_rawaudio_opts[] = {
   { "channels", &channels, CONF_TYPE_INT,CONF_RANGE,1,8, NULL },
@@ -47,7 +47,7 @@ static demuxer_t* demux_rawaudio_open(demuxer_t* demuxer) {
   sh_audio_t* sh_audio;
   WAVEFORMATEX* w;
 
-  if ((format & AF_FORMAT_SPECIAL_MASK) != 0)
+  if (af_format_is_special(format))
       return NULL;
 
   sh_audio = new_sh_audio(demuxer,0);

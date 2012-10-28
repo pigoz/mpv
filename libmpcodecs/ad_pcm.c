@@ -68,7 +68,7 @@ static int init(sh_audio_t * sh_audio)
         }
         break;
     case 0x3:                  // IEEE float
-        sh_audio->sample_format = AF_FORMAT_FLOAT_LE;
+        sh_audio->sample_format = AF_FORMAT_FLT_LE;
         break;
     case 0x6:  sh_audio->sample_format = AF_FORMAT_A_LAW;      break;
     case 0x7:  sh_audio->sample_format = AF_FORMAT_MU_LAW;     break;
@@ -89,12 +89,12 @@ static int init(sh_audio_t * sh_audio)
         break;
     case 0x32336c66: // 'fl32', bigendian float32
     case 0x32334C46: // 'FL32', bigendian float32 in aiff
-        sh_audio->sample_format = AF_FORMAT_FLOAT_BE;
+        sh_audio->sample_format = AF_FORMAT_FLT_BE;
         sh_audio->samplesize = 4;
         break;
     case 0x666c3332: // '23lf', little endian float32, MPlayer internal fourCC
     case 0x6D63706C: // 'lpcm'
-        sh_audio->sample_format = AF_FORMAT_FLOAT_LE;
+        sh_audio->sample_format = AF_FORMAT_FLT_LE;
         sh_audio->samplesize = 4;
         break;
 /*    case 0x34366c66: // 'fl64', bigendian float64

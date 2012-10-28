@@ -112,10 +112,10 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
         /* check for formats supported by libbs2b
            and assign corresponding handlers */
         switch (format) {
-            case AF_FORMAT_FLOAT_BE:
+            case AF_FORMAT_FLT_BE:
                 af->play = play_fbe;
                 break;
-            case AF_FORMAT_FLOAT_LE:
+            case AF_FORMAT_FLT_LE:
                 af->play = play_fle;
                 break;
             case AF_FORMAT_S32_BE:
@@ -162,7 +162,7 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
                 break;
             default:
                 af->play = play_f;
-                af->data->format = AF_FORMAT_FLOAT_NE;
+                af->data->format = AF_FORMAT_FLT;
                 af->data->bps = 4;
                 break;
         }

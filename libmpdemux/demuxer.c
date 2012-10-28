@@ -324,7 +324,7 @@ static struct sh_stream *new_sh_stream(demuxer_t *demuxer,
             sht->aid = tid;
             sht->ds = demuxer->audio;
             sht->samplesize = 2;
-            sht->sample_format = AF_FORMAT_S16_NE;
+            sht->sample_format = AF_FORMAT_S16;
             sh->audio = sht;
             sh->common_header = (struct sh_common *) sht;
             demuxer->a_streams[sh->stream_index] = sht;
