@@ -38,7 +38,7 @@ struct af_bs2b {
 };
 
 #define PLAY(name, type) \
-static af_data_t *play_##name(struct af_instance_s *af, af_data_t *data) \
+static struct af_data_s *play_##name(struct af_instance_s *af, struct af_data_s *data) \
 { \
     /* filter is called for all pairs of samples available in the buffer */ \
     bs2b_cross_feed_##name(((struct af_bs2b*)(af->setup))->filter, \
@@ -103,10 +103,10 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
         // Sanity check
         if (!arg) return AF_ERROR;
 
-        format           = ((af_data_t*)arg)->format;
-        af->data->rate   = ((af_data_t*)arg)->rate;
+        format           = ((struct af_data_s*)arg)->format;
+        af->data->rate   = ((struct af_data_s*)arg)->rate;
         af->data->nch    = 2;     // bs2b is useful only for 2ch audio
-        af->data->bps    = ((af_data_t*)arg)->bps;
+        af->data->bps    = ((struct af_data_s*)arg)->bps;
         af->data->format = format;
 
         /* check for formats supported by libbs2b
@@ -179,7 +179,7 @@ static int control(struct af_instance_s *af, int cmd, void *arg)
         mp_msg(MSGT_AFILTER, MSGL_V, "[bs2b] using format %s\n",
                af_fmt2str(af->data->format,buf,256));
 
-        return af_test_output(af,(af_data_t*)arg);
+        return af_test_output(af,(struct af_data_s*)arg);
     }
     case AF_CONTROL_COMMAND_LINE: {
         const opt_t subopts[] = {
@@ -243,7 +243,7 @@ static int af_open(af_instance_t *af)
     af->control = control;
     af->uninit  = uninit;
     af->mul     = 1;
-    if (!(af->data = calloc(1, sizeof(af_data_t))))
+    if (!(af->data = calloc(1, sizeof(struct af_data_s))))
         return AF_ERROR;
     if (!(af->setup = s = calloc(1, sizeof(struct af_bs2b)))) {
         free(af->data);

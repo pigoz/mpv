@@ -44,16 +44,16 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Sanity check
     if(!arg) return AF_ERROR;
 
-    af->data->rate   = ((af_data_t*)arg)->rate;
+    af->data->rate   = ((struct af_data_s*)arg)->rate;
     af->data->format = AF_FORMAT_FLOAT_NE;
     af->data->bps    = 4;
-    af->data->nch    = s->nch ? s->nch: ((af_data_t*)arg)->nch;
-    af->mul          = (double)af->data->nch / ((af_data_t*)arg)->nch;
+    af->data->nch    = s->nch ? s->nch: ((struct af_data_s*)arg)->nch;
+    af->mul          = (double)af->data->nch / ((struct af_data_s*)arg)->nch;
 
-    if((af->data->format != ((af_data_t*)arg)->format) ||
-       (af->data->bps != ((af_data_t*)arg)->bps)){
-      ((af_data_t*)arg)->format = af->data->format;
-      ((af_data_t*)arg)->bps = af->data->bps;
+    if((af->data->format != ((struct af_data_s*)arg)->format) ||
+       (af->data->bps != ((struct af_data_s*)arg)->bps)){
+      ((struct af_data_s*)arg)->format = af->data->format;
+      ((struct af_data_s*)arg)->bps = af->data->bps;
       return AF_FALSE;
     }
     return AF_OK;
@@ -148,10 +148,10 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static af_data_t* play(struct af_instance_s* af, af_data_t* data)
+static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
 {
-  af_data_t*    c    = data;		// Current working data
-  af_data_t*	l    = af->data;	// Local data
+  struct af_data_s*    c    = data;		// Current working data
+  struct af_data_s*	l    = af->data;	// Local data
   af_pan_t*  	s    = af->setup; 	// Setup for this instance
   float*   	in   = c->audio;	// Input audio data
   float*   	out  = NULL;		// Output audio data
@@ -192,7 +192,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(af_data_t));
+  af->data=calloc(1,sizeof(struct af_data_s));
   af->setup=calloc(1,sizeof(af_pan_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

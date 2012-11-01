@@ -52,10 +52,10 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     for(i=0;i<af->data->nch;i++)
       free(s->q[i]);
 
-    af->data->rate   = ((af_data_t*)arg)->rate;
-    af->data->nch    = ((af_data_t*)arg)->nch;
-    af->data->format = ((af_data_t*)arg)->format;
-    af->data->bps    = ((af_data_t*)arg)->bps;
+    af->data->rate   = ((struct af_data_s*)arg)->rate;
+    af->data->nch    = ((struct af_data_s*)arg)->nch;
+    af->data->format = ((struct af_data_s*)arg)->format;
+    af->data->bps    = ((struct af_data_s*)arg)->bps;
 
     // Allocate new delay queues
     for(i=0;i<af->data->nch;i++){
@@ -118,9 +118,9 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static af_data_t* play(struct af_instance_s* af, af_data_t* data)
+static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
 {
-  af_data_t*   	c   = data;	 // Current working data
+  struct af_data_s*   	c   = data;	 // Current working data
   af_delay_t*  	s   = af->setup; // Setup for this instance
   int 		nch = c->nch;	 // Number of channels
   int		len = c->len/c->bps; // Number of sample in data chunk
@@ -182,7 +182,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(af_data_t));
+  af->data=calloc(1,sizeof(struct af_data_s));
   af->setup=calloc(1,sizeof(af_delay_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

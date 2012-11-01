@@ -34,11 +34,11 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 {
 	switch(cmd){
 		case AF_CONTROL_REINIT:
-		af->data->rate	= ((af_data_t*)arg)->rate;
-		af->data->nch	= ((af_data_t*)arg)->nch;
+		af->data->rate	= ((struct af_data_s*)arg)->rate;
+		af->data->nch	= ((struct af_data_s*)arg)->nch;
 		af->data->format= AF_FORMAT_FLOAT_NE;
 		af->data->bps	= 4;
-		return af_test_output(af,(af_data_t*)arg);
+		return af_test_output(af,(struct af_data_s*)arg);
 	}
 	return AF_UNKNOWN;
 }
@@ -50,9 +50,9 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static af_data_t* play(struct af_instance_s* af, af_data_t* data)
+static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
 {
-	af_data_t*	c	= data;		 // Current working data
+	struct af_data_s*	c	= data;		 // Current working data
 	float*		a	= c->audio;	 // Audio data
 	int			len	= c->len/4;	 // Number of samples in current audio block
 	int			nch	= c->nch;	 // Number of channels
@@ -79,7 +79,7 @@ static int af_open(af_instance_t* af){
 	af->uninit	= uninit;
 	af->play	= play;
 	af->mul		= 1;
-	af->data	= calloc(1,sizeof(af_data_t));
+	af->data	= calloc(1,sizeof(struct af_data_s));
 
 	if(af->data == NULL)
 		return AF_ERROR;
