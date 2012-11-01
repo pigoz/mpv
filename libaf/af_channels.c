@@ -143,11 +143,11 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     if(!s->router){
       int i;
       // Make sure this filter isn't redundant
-      if(af->data->nch == ((struct af_data_s*)arg)->nch)
+      if(af->data->nch == ((struct mp_audio*)arg)->nch)
 	return AF_DETACH;
 
       // If mono: fake stereo
-      if(((struct af_data_s*)arg)->nch == 1){
+      if(((struct mp_audio*)arg)->nch == 1){
 	s->nr = min(af->data->nch,2);
 	for(i=0;i<s->nr;i++){
 	  s->route[i][FR] = 0;
@@ -155,7 +155,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 	}
       }
       else{
-	s->nr = min(af->data->nch, ((struct af_data_s*)arg)->nch);
+	s->nr = min(af->data->nch, ((struct mp_audio*)arg)->nch);
 	for(i=0;i<s->nr;i++){
 	  s->route[i][FR] = i;
 	  s->route[i][TO] = i;
@@ -163,11 +163,11 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       }
     }
 
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
-    af->data->format = ((struct af_data_s*)arg)->format;
-    af->data->bps    = ((struct af_data_s*)arg)->bps;
-    af->mul          = (double)af->data->nch / ((struct af_data_s*)arg)->nch;
-    return check_routes(s,((struct af_data_s*)arg)->nch,af->data->nch);
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
+    af->data->format = ((struct mp_audio*)arg)->format;
+    af->data->bps    = ((struct mp_audio*)arg)->bps;
+    af->mul          = (double)af->data->nch / ((struct mp_audio*)arg)->nch;
+    return check_routes(s,((struct mp_audio*)arg)->nch,af->data->nch);
   case AF_CONTROL_COMMAND_LINE:{
     int nch = 0;
     int n = 0;
@@ -256,10 +256,10 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*   	 c = data;			// Current working data
-  struct af_data_s*   	 l = af->data;	 		// Local data
+  struct mp_audio*   	 c = data;			// Current working data
+  struct mp_audio*   	 l = af->data;	 		// Local data
   af_channels_t* s = af->setup;
   int 		 i;
 
@@ -288,7 +288,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=calloc(1,sizeof(af_channels_t));
   if((af->data == NULL) || (af->setup == NULL))
     return AF_ERROR;

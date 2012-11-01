@@ -52,10 +52,10 @@ static void float2int(float* in, void* out, int len, int bps);
 // From signed int to float
 static void int2float(void* in, float* out, int len, int bps);
 
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data);
-static struct af_data_s* play_swapendian(struct af_instance_s* af, struct af_data_s* data);
-static struct af_data_s* play_float_s16(struct af_instance_s* af, struct af_data_s* data);
-static struct af_data_s* play_s16_float(struct af_instance_s* af, struct af_data_s* data);
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data);
+static struct mp_audio* play_swapendian(struct af_instance_s* af, struct mp_audio* data);
+static struct mp_audio* play_float_s16(struct af_instance_s* af, struct mp_audio* data);
+static struct mp_audio* play_s16_float(struct af_instance_s* af, struct mp_audio* data);
 
 // Helper functions to check sanity for input arguments
 
@@ -92,7 +92,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   case AF_CONTROL_REINIT:{
     char buf1[256];
     char buf2[256];
-    struct af_data_s *data = arg;
+    struct mp_audio *data = arg;
 
     // Make sure this filter isn't redundant
     if(af->data->format == data->format &&
@@ -176,10 +176,10 @@ static void uninit(struct af_instance_s* af)
   af->setup = 0;
 }
 
-static struct af_data_s* play_swapendian(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play_swapendian(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*   l   = af->data;	// Local data
-  struct af_data_s*   c   = data;	// Current working data
+  struct mp_audio*   l   = af->data;	// Local data
+  struct mp_audio*   c   = data;	// Current working data
   int 	       len = c->len/c->bps; // Length in samples of current audio block
 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
@@ -193,10 +193,10 @@ static struct af_data_s* play_swapendian(struct af_instance_s* af, struct af_dat
   return c;
 }
 
-static struct af_data_s* play_float_s16(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play_float_s16(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*   l   = af->data;	// Local data
-  struct af_data_s*   c   = data;	// Current working data
+  struct mp_audio*   l   = af->data;	// Local data
+  struct mp_audio*   c   = data;	// Current working data
   int 	       len = c->len/4; // Length in samples of current audio block
 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
@@ -212,10 +212,10 @@ static struct af_data_s* play_float_s16(struct af_instance_s* af, struct af_data
   return c;
 }
 
-static struct af_data_s* play_s16_float(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play_s16_float(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*   l   = af->data;	// Local data
-  struct af_data_s*   c   = data;	// Current working data
+  struct mp_audio*   l   = af->data;	// Local data
+  struct mp_audio*   c   = data;	// Current working data
   int 	       len = c->len/2; // Length in samples of current audio block
 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
@@ -232,10 +232,10 @@ static struct af_data_s* play_s16_float(struct af_instance_s* af, struct af_data
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*   l   = af->data;	// Local data
-  struct af_data_s*   c   = data;	// Current working data
+  struct mp_audio*   l   = af->data;	// Local data
+  struct mp_audio*   c   = data;	// Current working data
   int 	       len = c->len/c->bps; // Length in samples of current audio block
 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
@@ -318,7 +318,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   if(af->data == NULL)
     return AF_ERROR;
   return AF_OK;

@@ -34,8 +34,8 @@ typedef struct af_extrastereo_s
     float mul;
 }af_extrastereo_t;
 
-static struct af_data_s* play_s16(struct af_instance_s* af, struct af_data_s* data);
-static struct af_data_s* play_float(struct af_instance_s* af, struct af_data_s* data);
+static struct mp_audio* play_s16(struct af_instance_s* af, struct mp_audio* data);
+static struct mp_audio* play_float(struct af_instance_s* af, struct mp_audio* data);
 
 // Initialization and runtime control
 static int control(struct af_instance_s* af, int cmd, void* arg)
@@ -47,9 +47,9 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Sanity check
     if(!arg) return AF_ERROR;
 
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
     af->data->nch    = 2;
-    if (((struct af_data_s*)arg)->format == AF_FORMAT_FLOAT_NE)
+    if (((struct mp_audio*)arg)->format == AF_FORMAT_FLOAT_NE)
     {
 	af->data->format = AF_FORMAT_FLOAT_NE;
 	af->data->bps = 4;
@@ -61,7 +61,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 	af->play = play_s16;
     }
 
-    return af_test_output(af,(struct af_data_s*)arg);
+    return af_test_output(af,(struct mp_audio*)arg);
   }
   case AF_CONTROL_COMMAND_LINE:{
     float f;
@@ -87,7 +87,7 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static struct af_data_s* play_s16(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play_s16(struct af_instance_s* af, struct mp_audio* data)
 {
   af_extrastereo_t *s = af->setup;
   register int i = 0;
@@ -109,7 +109,7 @@ static struct af_data_s* play_s16(struct af_instance_s* af, struct af_data_s* da
   return data;
 }
 
-static struct af_data_s* play_float(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play_float(struct af_instance_s* af, struct mp_audio* data)
 {
   af_extrastereo_t *s = af->setup;
   register int i = 0;
@@ -137,7 +137,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play_s16;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=calloc(1,sizeof(af_extrastereo_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

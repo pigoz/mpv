@@ -289,7 +289,7 @@ static int control(struct af_instance_s *af, int cmd, void* arg)
 
     switch(cmd) {
     case AF_CONTROL_REINIT:
-	af->data->rate   = ((struct af_data_s*)arg)->rate;
+	af->data->rate   = ((struct mp_audio*)arg)->rate;
 	if(af->data->rate != 48000) {
 	    // automatic samplerate adjustment in the filter chain
 	    // is not yet supported.
@@ -298,7 +298,7 @@ static int control(struct af_instance_s *af, int cmd, void* arg)
 		   af->data->rate);
 	    return AF_ERROR;
 	}
-	af->data->nch    = ((struct af_data_s*)arg)->nch;
+	af->data->nch    = ((struct mp_audio*)arg)->nch;
 	    if(af->data->nch == 2) {
  	       /* 2 channel input */
  	       if(s->decode_mode != HRTF_MIX_MATRIX2CH) {
@@ -310,7 +310,7 @@ static int control(struct af_instance_s *af, int cmd, void* arg)
 	      af->data->nch = 5;
 	af->data->format = AF_FORMAT_S16_NE;
 	af->data->bps    = 2;
-	test_output_res = af_test_output(af, (struct af_data_s*)arg);
+	test_output_res = af_test_output(af, (struct mp_audio*)arg);
 	af->mul = 2.0 / af->data->nch;
 	// after testing input set the real output format
 	af->data->nch = 2;
@@ -380,7 +380,7 @@ frequencies).
 2. A bass compensation is introduced to ensure that 0-200 Hz are not
 damped (without any real 3D acoustical image, however).
 */
-static struct af_data_s* play(struct af_instance_s *af, struct af_data_s *data)
+static struct mp_audio* play(struct af_instance_s *af, struct mp_audio *data)
 {
     af_hrtf_t *s = af->setup;
     short *in = data->audio; // Input audio data
@@ -602,7 +602,7 @@ static int af_open(af_instance_t* af)
     af->uninit = uninit;
     af->play = play;
     af->mul = 1;
-    af->data = calloc(1, sizeof(struct af_data_s));
+    af->data = calloc(1, sizeof(struct mp_audio));
     af->setup = calloc(1, sizeof(af_hrtf_t));
     if((af->data == NULL) || (af->setup == NULL))
 	return AF_ERROR;

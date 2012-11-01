@@ -47,12 +47,12 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Sanity check
     if(!arg) return AF_ERROR;
 
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
-    af->data->nch    = max(s->ch+1,((struct af_data_s*)arg)->nch);
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
+    af->data->nch    = max(s->ch+1,((struct mp_audio*)arg)->nch);
     af->data->format = AF_FORMAT_FLOAT_NE;
     af->data->bps    = 4;
 
-    return af_test_output(af,(struct af_data_s*)arg);
+    return af_test_output(af,(struct mp_audio*)arg);
   }
   case AF_CONTROL_COMMAND_LINE:{
     int   ch=1;
@@ -83,9 +83,9 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*    c   = data;	 // Current working data
+  struct mp_audio*    c   = data;	 // Current working data
   af_center_t*  s   = af->setup; // Setup for this instance
   float*   	a   = c->audio;	 // Audio data
   int		len = c->len/4;	 // Number of samples in current audio block
@@ -109,7 +109,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=s=calloc(1,sizeof(af_center_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

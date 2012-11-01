@@ -78,7 +78,7 @@ typedef struct af_scaletempo_s
   short   speed_pitch;
 } af_scaletempo_t;
 
-static int fill_queue(struct af_instance_s* af, struct af_data_s* data, int offset)
+static int fill_queue(struct af_instance_s* af, struct mp_audio* data, int offset)
 {
   af_scaletempo_t* s = af->setup;
   int bytes_in = data->len - offset;
@@ -219,7 +219,7 @@ static void output_overlap_s16(af_scaletempo_t* s, void* buf_out,
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
   af_scaletempo_t* s = af->setup;
   int offset_in;
@@ -290,7 +290,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   af_scaletempo_t* s = af->setup;
   switch(cmd){
   case AF_CONTROL_REINIT:{
-    struct af_data_s* data = (struct af_data_s*)arg;
+    struct mp_audio* data = (struct mp_audio*)arg;
     float srate = data->rate / 1000;
     int nch = data->nch;
     int bps;
@@ -305,7 +305,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     if (s->scale == 1.0) {
       if (s->speed_tempo && s->speed_pitch)
         return AF_DETACH;
-      memcpy(af->data, data, sizeof(struct af_data_s));
+      memcpy(af->data, data, sizeof(struct mp_audio));
       return af_test_output(af, data);
     }
 
@@ -436,7 +436,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
             (int)(s->bytes_queue / nch / bps),
             (use_int?"s16":"float"));
 
-    return af_test_output(af, (struct af_data_s*)arg);
+    return af_test_output(af, (struct mp_audio*)arg);
   }
   case AF_CONTROL_PLAYBACK_SPEED | AF_CONTROL_SET:{
     if (s->speed_tempo) {
@@ -551,7 +551,7 @@ static int af_open(af_instance_t* af){
   af->uninit    = uninit;
   af->play      = play;
   af->mul       = 1;
-  af->data      = calloc(1,sizeof(struct af_data_s));
+  af->data      = calloc(1,sizeof(struct mp_audio));
   af->setup     = calloc(1,sizeof(af_scaletempo_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

@@ -84,8 +84,8 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
       close(s->fd);
 
     // Accept only int16_t as input format (which sucks)
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
-    af->data->nch    = ((struct af_data_s*)arg)->nch;
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
+    af->data->nch    = ((struct mp_audio*)arg)->nch;
     af->data->format = AF_FORMAT_S16_NE;
     af->data->bps    = 2;
 
@@ -129,7 +129,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     msync(s->mmap_area, mapsize, MS_ASYNC);
 
     // Use test_output to return FALSE if necessary
-    return af_test_output(af, (struct af_data_s*)arg);
+    return af_test_output(af, (struct mp_audio*)arg);
   }
   case AF_CONTROL_COMMAND_LINE:{
     int i=0;
@@ -201,9 +201,9 @@ static void uninit( struct af_instance_s* af )
    af audio filter instance
    data audio data
 */
-static struct af_data_s* play( struct af_instance_s* af, struct af_data_s* data )
+static struct mp_audio* play( struct af_instance_s* af, struct mp_audio* data )
 {
-  struct af_data_s*   	c   = data;	     // Current working data
+  struct mp_audio*   	c   = data;	     // Current working data
   af_export_t* 	s   = af->setup;     // Setup for this instance
   int16_t* 	a   = c->audio;	     // Incomming sound
   int 		nch = c->nch;	     // Number of channels
@@ -252,7 +252,7 @@ static int af_open( af_instance_t* af )
   af->uninit  = uninit;
   af->play    = play;
   af->mul=1;
-  af->data    = calloc(1, sizeof(struct af_data_s));
+  af->data    = calloc(1, sizeof(struct mp_audio));
   af->setup   = calloc(1, sizeof(af_export_t));
   if((af->data == NULL) || (af->setup == NULL))
     return AF_ERROR;

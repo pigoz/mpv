@@ -37,8 +37,7 @@ struct af_instance_s;
 #endif
 
 // Audio data chunk
-typedef struct af_data_s
-{
+struct mp_audio {
   void* audio;  // data buffer
   int len;      // buffer length
   int rate;	// sample rate
@@ -70,9 +69,9 @@ typedef struct af_instance_s
   af_info_t* info;
   int (*control)(struct af_instance_s* af, int cmd, void* arg);
   void (*uninit)(struct af_instance_s* af);
-  struct af_data_s* (*play)(struct af_instance_s* af, struct af_data_s* data);
+  struct mp_audio* (*play)(struct af_instance_s* af, struct mp_audio* data);
   void* setup;	  // setup data for this specific instance and filter
-  struct af_data_s* data; // configuration for outgoing data stream
+  struct mp_audio* data; // configuration for outgoing data stream
   struct af_instance_s* next;
   struct af_instance_s* prev;
   double delay; /* Delay caused by the filter, in units of bytes read without
@@ -113,8 +112,8 @@ typedef struct af_stream
   af_instance_t* first;
   af_instance_t* last;
   // Storage for input and output data formats
-  struct af_data_s input;
-  struct af_data_s output;
+  struct mp_audio input;
+  struct mp_audio output;
   // Configuration for this stream
   af_cfg_t cfg;
   struct MPOpts *opts;
@@ -203,7 +202,7 @@ af_instance_t* af_get(af_stream_t* s, char* name);
  * \return resulting data
  * \ingroup af_chain
  */
-struct af_data_s* af_play(af_stream_t* s, struct af_data_s* data);
+struct mp_audio* af_play(af_stream_t* s, struct mp_audio* data);
 
 /**
  * \brief send control to all filters, starting with the last until
@@ -237,12 +236,12 @@ double af_calc_delay(af_stream_t* s);
 
 /* Helper function called by the macro with the same name only to be
    called from inside filters */
-int af_resize_local_buffer(af_instance_t* af, struct af_data_s* data);
+int af_resize_local_buffer(af_instance_t* af, struct mp_audio* data);
 
 /* Helper function used to calculate the exact buffer length needed
    when buffers are resized. The returned length is >= than what is
    needed */
-int af_lencalc(double mul, struct af_data_s* data);
+int af_lencalc(double mul, struct mp_audio* data);
 
 /**
  * \brief convert dB to gain value
@@ -297,7 +296,7 @@ int af_to_ms(int n, int* in, float* out, int rate);
  *
  * compares the format, bps, rate and nch values of af->data with out
  */
-int af_test_output(struct af_instance_s* af, struct af_data_s* out);
+int af_test_output(struct af_instance_s* af, struct mp_audio* out);
 
 /**
  * \brief soft clipping function using sin()
@@ -312,13 +311,13 @@ float af_softclip(float a);
 void af_help(void);
 
 /**
- * \brief fill the missing parameters in the struct af_data_s structure
+ * \brief fill the missing parameters in the struct mp_audio structure
  * \param data structure to fill
  * \ingroup af_filter
  *
  * Currently only sets bps based on format
  */
-void af_fix_parameters(struct af_data_s *data);
+void af_fix_parameters(struct mp_audio *data);
 
 /** Memory reallocation macro: if a local buffer is used (i.e. if the
    filter doesn't operate on the incoming buffer this macro must be

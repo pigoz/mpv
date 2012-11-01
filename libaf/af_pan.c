@@ -44,16 +44,16 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
     // Sanity check
     if(!arg) return AF_ERROR;
 
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
     af->data->format = AF_FORMAT_FLOAT_NE;
     af->data->bps    = 4;
-    af->data->nch    = s->nch ? s->nch: ((struct af_data_s*)arg)->nch;
-    af->mul          = (double)af->data->nch / ((struct af_data_s*)arg)->nch;
+    af->data->nch    = s->nch ? s->nch: ((struct mp_audio*)arg)->nch;
+    af->mul          = (double)af->data->nch / ((struct mp_audio*)arg)->nch;
 
-    if((af->data->format != ((struct af_data_s*)arg)->format) ||
-       (af->data->bps != ((struct af_data_s*)arg)->bps)){
-      ((struct af_data_s*)arg)->format = af->data->format;
-      ((struct af_data_s*)arg)->bps = af->data->bps;
+    if((af->data->format != ((struct mp_audio*)arg)->format) ||
+       (af->data->bps != ((struct mp_audio*)arg)->bps)){
+      ((struct mp_audio*)arg)->format = af->data->format;
+      ((struct mp_audio*)arg)->bps = af->data->bps;
       return AF_FALSE;
     }
     return AF_OK;
@@ -148,10 +148,10 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
-  struct af_data_s*    c    = data;		// Current working data
-  struct af_data_s*	l    = af->data;	// Local data
+  struct mp_audio*    c    = data;		// Current working data
+  struct mp_audio*	l    = af->data;	// Local data
   af_pan_t*  	s    = af->setup; 	// Setup for this instance
   float*   	in   = c->audio;	// Input audio data
   float*   	out  = NULL;		// Output audio data
@@ -192,7 +192,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=calloc(1,sizeof(af_pan_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

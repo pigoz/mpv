@@ -92,8 +92,8 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   switch(cmd){
   case AF_CONTROL_REINIT:{
     float fc;
-    af->data->rate   = ((struct af_data_s*)arg)->rate;
-    af->data->nch    = ((struct af_data_s*)arg)->nch*2;
+    af->data->rate   = ((struct mp_audio*)arg)->rate;
+    af->data->nch    = ((struct mp_audio*)arg)->nch*2;
     af->data->format = AF_FORMAT_FLOAT_NE;
     af->data->bps    = 4;
 
@@ -123,10 +123,10 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
 //    printf("%i\n",s->wi);
     s->ri = 0;
 
-    if((af->data->format != ((struct af_data_s*)arg)->format) ||
-       (af->data->bps    != ((struct af_data_s*)arg)->bps)){
-      ((struct af_data_s*)arg)->format = af->data->format;
-      ((struct af_data_s*)arg)->bps = af->data->bps;
+    if((af->data->format != ((struct mp_audio*)arg)->format) ||
+       (af->data->bps    != ((struct mp_audio*)arg)->bps)){
+      ((struct mp_audio*)arg)->format = af->data->format;
+      ((struct mp_audio*)arg)->bps = af->data->bps;
       return AF_FALSE;
     }
     return AF_OK;
@@ -167,7 +167,7 @@ static float steering_matrix[][12] = {
 //static int amp_L = 0, amp_R = 0, amp_C = 0, amp_S = 0;
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data){
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data){
   af_surround_t* s   = (af_surround_t*)af->setup;
   float*	 m   = steering_matrix[0];
   float*     	 in  = data->audio; 	// Input audio data
@@ -254,7 +254,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=2;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=calloc(1,sizeof(af_surround_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;

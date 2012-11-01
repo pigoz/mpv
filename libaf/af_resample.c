@@ -75,7 +75,7 @@ typedef struct af_resample_s
 } af_resample_t;
 
 // Fast linear interpolation resample with modest audio quality
-static int linint(struct af_data_s* c,struct af_data_s* l, af_resample_t* s)
+static int linint(struct mp_audio* c,struct mp_audio* l, af_resample_t* s)
 {
   uint32_t	len   = 0; 		// Number of input samples
   uint32_t	nch   = l->nch;   	// Words pre transfer
@@ -122,7 +122,7 @@ static int linint(struct af_data_s* c,struct af_data_s* l, af_resample_t* s)
 }
 
 /* Determine resampling type and format */
-static int set_types(struct af_instance_s* af, struct af_data_s* data)
+static int set_types(struct af_instance_s* af, struct mp_audio* data)
 {
   af_resample_t* s = af->setup;
   int rv = AF_OK;
@@ -175,7 +175,7 @@ static int control(struct af_instance_s* af, int cmd, void* arg)
   switch(cmd){
   case AF_CONTROL_REINIT:{
     af_resample_t* s   = af->setup;
-    struct af_data_s* 	   n   = arg; // New configuration
+    struct mp_audio* 	   n   = arg; // New configuration
     int            i,d = 0;
     int 	   rv  = AF_OK;
 
@@ -317,11 +317,11 @@ static void uninit(struct af_instance_s* af)
 }
 
 // Filter data through filter
-static struct af_data_s* play(struct af_instance_s* af, struct af_data_s* data)
+static struct mp_audio* play(struct af_instance_s* af, struct mp_audio* data)
 {
   int 		 len = 0; 	 // Length of output data
-  struct af_data_s*     c   = data;	 // Current working data
-  struct af_data_s*     l   = af->data; // Local data
+  struct mp_audio*     c   = data;	 // Current working data
+  struct mp_audio*     l   = af->data; // Local data
   af_resample_t* s   = af->setup;
 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
@@ -375,7 +375,7 @@ static int af_open(af_instance_t* af){
   af->uninit=uninit;
   af->play=play;
   af->mul=1;
-  af->data=calloc(1,sizeof(struct af_data_s));
+  af->data=calloc(1,sizeof(struct mp_audio));
   af->setup=calloc(1,sizeof(af_resample_t));
   if(af->data == NULL || af->setup == NULL)
     return AF_ERROR;
