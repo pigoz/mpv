@@ -36,14 +36,58 @@ struct af_instance;
 #define AF_NCH 8
 #endif
 
+enum MPAudioFormat {
+    // uncompressed
+    AF_LPCM      = "lpcm",
+    AF_ULAW      = "ulaw",
+    AF_ALAW      = "alaw",
+
+    // compressed
+    AF_AC3       = "ac3",
+    AF_IEC61937  = "iec61937"
+};
+
+enum MPAudioFormatFlags {
+    // Set for float, clear for integer
+    AF_IS_FLOAT              = (1 << 0),    // 0x1
+
+    // Set for big endian, clear for little endian
+    AF_IS_BIG_ENDIAN         = (1 << 1),    // 0x2
+
+    // Set for signed integer, clear for unsigned integer
+    AF_IS_SIGNED_INTEGER     = (1 << 2),    // 0x4
+
+    // Set for non interleaved, clear for interleaved
+    AF_IS_NONINTERLEAVED     = (1 << 5),    // 0x20
+
+    // All flags clear (so that 0 can mean no format)
+    AF_ALL_CLEAR             = (1 << 31),
+};
+
+// Audio Stream Description (ASD)
+struct mp_asd {
+    enum MPAudioFormat format;
+    enum MPAudioFormatFlags flags;
+
+    uint32_t sample_rate;
+    uint32_t nch;  // number of channels
+    uint32_t bits; // bits per sample
+};
+
+// example functions (bit mask should never ba accessed directly)
+bool af_is_planar(struct mp_asd *asd) {
+    return asd->format & AF_IS_NONINTERLEAVED;
+}
+
+int af_bps(struct mp_asd *asd) {
+    return asd->bits / 8;
+}
+
 // Audio data chunk
 struct mp_audio {
-    void *audio; // data buffer
-    int len;    // buffer length
-    int rate;   // sample rate
-    int nch;    // number of channels
-    int format; // format
-    int bps;    // bytes per sample
+    void   *audio; // data buffer
+    size_t len;    // buffer length
+    struct mp_asd asd;   // sample rate
 };
 
 
