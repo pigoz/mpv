@@ -23,7 +23,6 @@
 #include <assert.h>
 
 #include <libavcodec/avcodec.h>
-#include <libavresample/avresample.h>
 #include <libavutil/opt.h>
 
 #include "talloc.h"
@@ -51,7 +50,6 @@ LIBAD_EXTERN(ffmpeg)
 
 struct priv {
     AVCodecContext *avctx;
-    AVAudioResampleContext *avr;
     AVFrame *avframe;
     char *output;
     unsigned char *output_packed; // used to store packed audio samples
@@ -74,11 +72,18 @@ static int setup_format(sh_audio_t *sh_audio,
                         const AVCodecContext *lavc_context)
 {
     int sample_format = sh_audio->sample_format;
-    switch (av_get_packed_sample_fmt(lavc_context->sample_fmt)) {
-    case AV_SAMPLE_FMT_U8:  sample_format = AF_FORMAT_U8;       break;
-    case AV_SAMPLE_FMT_S16: sample_format = AF_FORMAT_S16_NE;   break;
-    case AV_SAMPLE_FMT_S32: sample_format = AF_FORMAT_S32_NE;   break;
-    case AV_SAMPLE_FMT_FLT: sample_format = AF_FORMAT_FLOAT_NE; break;
+    switch (lavc_context->sample_fmt) {
+
+    case AV_SAMPLE_FMT_U8:   sample_format = AF_FORMAT_U8;        break;
+    case AV_SAMPLE_FMT_S16:  sample_format = AF_FORMAT_S16_NE;    break;
+    case AV_SAMPLE_FMT_S32:  sample_format = AF_FORMAT_S32_NE;    break;
+    case AV_SAMPLE_FMT_FLT:  sample_format = AF_FORMAT_FLOAT_NE;  break;
+
+    case AV_SAMPLE_FMT_U8P:  sample_format = AF_FORMAT_U8P;       break;
+    case AV_SAMPLE_FMT_S16P: sample_format = AF_FORMAT_S16P_NE;   break;
+    case AV_SAMPLE_FMT_S32P: sample_format = AF_FORMAT_S32P_NE;   break;
+    case AV_SAMPLE_FMT_FLTP: sample_format = AF_FORMAT_FLOATP_NE; break;
+
     default:
         mp_msg(MSGT_DECAUDIO, MSGL_FATAL, "Unsupported sample format\n");
         sample_format = AF_FORMAT_UNKNOWN;
@@ -203,15 +208,6 @@ static int init(sh_audio_t *sh_audio)
         sh_audio->ds->ss_mul = 2 * sh_audio->wf->nChannels; // 1 byte*ch/packet
     }
 
-    // Initialize libavresample
-    ctx->avr = avresample_alloc_context();
-    if (!ctx->avr) {
-        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to initialize libavresample"
-                                         " context.\n");
-        uninit(sh_audio);
-        return 0;
-    }
-
     // Decode at least 1 byte:  (to get header filled)
     for (int tries = 0;;) {
         int x = decode_audio(sh_audio, sh_audio->a_buffer, 1,
@@ -232,11 +228,11 @@ static int init(sh_audio_t *sh_audio)
     if (sh_audio->wf && sh_audio->wf->nAvgBytesPerSec)
         sh_audio->i_bps = sh_audio->wf->nAvgBytesPerSec;
 
-    switch (av_get_packed_sample_fmt(lavc_context->sample_fmt)) {
-    case AV_SAMPLE_FMT_U8:
-    case AV_SAMPLE_FMT_S16:
-    case AV_SAMPLE_FMT_S32:
-    case AV_SAMPLE_FMT_FLT:
+    switch (lavc_context->sample_fmt) {
+    case AV_SAMPLE_FMT_U8:   case AV_SAMPLE_FMT_U8P:
+    case AV_SAMPLE_FMT_S16:  case AV_SAMPLE_FMT_S16P:
+    case AV_SAMPLE_FMT_S32:  case AV_SAMPLE_FMT_S32P:
+    case AV_SAMPLE_FMT_FLT:  case AV_SAMPLE_FMT_FLTP:
         break;
     default:
         uninit(sh_audio);
@@ -261,10 +257,6 @@ static void uninit(sh_audio_t *sh)
     }
     avcodec_free_frame(&ctx->avframe);
 
-    if (ctx->avr) {
-        avresample_free(&ctx->avr);
-    }
-
     talloc_free(ctx);
     sh->context = NULL;
 }
@@ -281,60 +273,6 @@ static int control(sh_audio_t *sh, int cmd, void *arg, ...)
         return CONTROL_TRUE;
     }
     return CONTROL_UNKNOWN;
-}
-
-static int interleave_samples(struct sh_audio *sh)
-{
-    struct priv *priv = sh->context;
-
-    AVCodecContext *avctx       = priv->avctx;
-    AVAudioResampleContext *avr = priv->avr;
-    AVFrame *avframe            = priv->avframe;
-
-    int channel_layout = avframe->channel_layout;
-    int sample_rate    = avframe->sample_rate;
-    int in_sample_fmt  = avframe->format;
-    int out_sample_fmt = av_get_packed_sample_fmt(avframe->format);
-
-    av_opt_set_int(avr, "in_channel_layout",  channel_layout,  0);
-    av_opt_set_int(avr, "in_sample_fmt",      in_sample_fmt,   0);
-    av_opt_set_int(avr, "in_sample_rate",     sample_rate,     0);
-
-    av_opt_set_int(avr, "out_channel_layout", channel_layout,  0);
-    av_opt_set_int(avr, "out_sample_fmt",     out_sample_fmt,  0);
-    av_opt_set_int(avr, "out_sample_rate",    sample_rate,     0);
-
-    if (avresample_open(avr) < 0) {
-        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to initialize libavresample"
-                                         " context.\n");
-        return -1;
-    }
-
-    int out_linesize;
-    int nb_samples = avframe->nb_samples;
-    int channels   = avctx->channels;
-    int out_size   = av_samples_get_buffer_size(&out_linesize,
-                                                channels,
-                                                nb_samples,
-                                                out_sample_fmt, 0);
-
-    if (talloc_get_size(priv->output_packed) != out_size)
-        priv->output_packed =
-            talloc_realloc_size(priv, priv->output_packed, out_size);
-
-    int out_samples =
-        avresample_convert(avr, &priv->output_packed, out_linesize,
-                           nb_samples, priv->avframe->data,
-                           priv->avframe->linesize[0], nb_samples);
-
-    if (out_samples < 0) {
-        mp_tmsg(MSGT_DECAUDIO, MSGL_ERR, "Failed to resample packet.\n");
-        return -1;
-    }
-
-    avresample_close(avr);
-    priv->output = priv->output_packed;
-    return 0;
 }
 
 static int decode_new_packet(struct sh_audio *sh)
@@ -402,14 +340,7 @@ static int decode_new_packet(struct sh_audio *sh)
     if (output_left > 500000000)
         abort();
     priv->output_left = output_left;
-    if (av_sample_fmt_is_planar(avctx->sample_fmt) && avctx->channels > 1) {
-        if (interleave_samples(sh) < 0) {
-            uninit(sh);
-            return -1;
-        }
-    } else {
-        priv->output = priv->avframe->data[0];
-    }
+    priv->output = priv->avframe->data[0];
     mp_dbg(MSGT_DECAUDIO, MSGL_DBG2, "Decoded %d -> %d  \n", insize,
            priv->output_left);
     return 0;
