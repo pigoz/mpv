@@ -87,6 +87,30 @@ const struct af_fmt_entry af_fmtstr_table[] = {
     { "floatbe", AF_FORMAT_FLOAT_BE },
     { "floatne", AF_FORMAT_FLOAT_NE },
 
+    { "u8p", AF_FORMAT_U8 },
+    { "s8p", AF_FORMAT_S8 },
+    { "u16ple", AF_FORMAT_U16P_LE },
+    { "u16pbe", AF_FORMAT_U16P_BE },
+    { "u16pne", AF_FORMAT_U16P_NE },
+    { "s16ple", AF_FORMAT_S16P_LE },
+    { "s16pbe", AF_FORMAT_S16P_BE },
+    { "s16pne", AF_FORMAT_S16P_NE },
+    { "u24ple", AF_FORMAT_U24P_LE },
+    { "u24pbe", AF_FORMAT_U24P_BE },
+    { "u24pne", AF_FORMAT_U24P_NE },
+    { "s24ple", AF_FORMAT_S24P_LE },
+    { "s24pbe", AF_FORMAT_S24P_BE },
+    { "s24pne", AF_FORMAT_S24P_NE },
+    { "u32ple", AF_FORMAT_U32P_LE },
+    { "u32pbe", AF_FORMAT_U32P_BE },
+    { "u32pne", AF_FORMAT_U32P_NE },
+    { "s32ple", AF_FORMAT_S32P_LE },
+    { "s32pbe", AF_FORMAT_S32P_BE },
+    { "s32pne", AF_FORMAT_S32P_NE },
+    { "floatple", AF_FORMAT_FLOATP_LE },
+    { "floatpbe", AF_FORMAT_FLOATP_BE },
+    { "floatpne", AF_FORMAT_FLOATP_NE },
+
     {0}
 };
 
