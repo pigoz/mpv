@@ -29,18 +29,7 @@
 int af_fmt2bits(int format)
 {
     if (AF_FORMAT_IS_AC3(format)) return 16;
-    return (format & AF_FORMAT_BITS_MASK)+8;
-//    return (((format & AF_FORMAT_BITS_MASK)>>3)+1) * 8;
-#if 0
-    switch(format & AF_FORMAT_BITS_MASK)
-    {
-	case AF_FORMAT_8BIT: return 8;
-	case AF_FORMAT_16BIT: return 16;
-	case AF_FORMAT_24BIT: return 24;
-	case AF_FORMAT_32BIT: return 32;
-	case AF_FORMAT_48BIT: return 48;
-    }
-#endif
+    return (((format & AF_FORMAT_BITS_MASK)>>AF_BITS_OFFSET)+1) * 8;
     return -1;
 }
 

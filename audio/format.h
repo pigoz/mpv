@@ -54,13 +54,14 @@
 #define AF_FORMAT_INTERLEAVING_MASK  (1<<3)
 
 // Bits used
-#define AF_FORMAT_8BIT		(0<<4)
-#define AF_FORMAT_16BIT		(1<<4)
-#define AF_FORMAT_24BIT		(2<<4)
-#define AF_FORMAT_32BIT		(3<<4)
-#define AF_FORMAT_40BIT		(4<<4)
-#define AF_FORMAT_48BIT		(5<<4)
-#define AF_FORMAT_BITS_MASK	(7<<4)
+#define AF_BITS_OFFSET 4
+#define AF_FORMAT_8BIT		(0<<AF_BITS_OFFSET)
+#define AF_FORMAT_16BIT		(1<<AF_BITS_OFFSET)
+#define AF_FORMAT_24BIT		(2<<AF_BITS_OFFSET)
+#define AF_FORMAT_32BIT		(3<<AF_BITS_OFFSET)
+#define AF_FORMAT_40BIT		(4<<AF_BITS_OFFSET)
+#define AF_FORMAT_48BIT		(5<<AF_BITS_OFFSET)
+#define AF_FORMAT_BITS_MASK	(7<<AF_BITS_OFFSET)
 
 // Special flags refering to non pcm data
 #define AF_FORMAT_MU_LAW        (1<<7)
