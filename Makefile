@@ -120,6 +120,7 @@ SOURCES-$(XV)                   += video/out/vo_xv.c
 
 
 SOURCES = talloc.c \
+          audio/fmt-conversion.c \
           audio/format.c \
           audio/mixer.c \
           audio/reorder_ch.c \
