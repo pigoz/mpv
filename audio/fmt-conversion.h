@@ -16,13 +16,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef MPLAYER_FMT_CONVERSION_H
-#define MPLAYER_FMT_CONVERSION_H
+#ifndef MPLAYER_SAMPLE_FMT_CONVERSION_H
+#define MPLAYER_SAMPLE_FMT_CONVERSION_H
 
-#include <libavutil/pixfmt.h>
-#include <libavutil/samplefmt.h>
+enum AVSampleFormat afsamplefmt2avsamplefmt(int fmt);
+int avsamplefmt2afsamplefmt(enum AVSampleFormat sample_fmt);
 
-enum PixelFormat imgfmt2pixfmt(int fmt);
-int pixfmt2imgfmt(enum PixelFormat pix_fmt);
-
-#endif /* MPLAYER_FMT_CONVERSION_H */
+#endif /* MPLAYER_SAMPLE_FMT_CONVERSION_H */
