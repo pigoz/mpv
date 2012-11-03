@@ -298,6 +298,7 @@ static int decode_new_packet(struct sh_audio *sh)
     }
     int got_frame = 0;
     int ret = avcodec_decode_audio4(avctx, priv->avframe, &got_frame, &pkt);
+    //mp_msg(MSGT_DECAUDIO, MSGL_V, "samples: %d\n", priv->avframe->nb_samples);
     // LATM may need many packets to find mux info
     if (ret == AVERROR(EAGAIN))
         return 0;

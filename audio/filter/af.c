@@ -40,6 +40,7 @@ extern struct af_info af_info_volnorm;
 extern struct af_info af_info_extrastereo;
 extern struct af_info af_info_lavcac3enc;
 extern struct af_info af_info_lavcresample;
+extern struct af_info af_info_lavr;
 extern struct af_info af_info_sweep;
 extern struct af_info af_info_hrtf;
 extern struct af_info af_info_ladspa;
@@ -67,6 +68,7 @@ static struct af_info* filter_list[]={
    &af_info_extrastereo,
    &af_info_lavcac3enc,
    &af_info_lavcresample,
+   &af_info_lavr,
    &af_info_sweep,
    &af_info_hrtf,
 #ifdef CONFIG_LADSPA

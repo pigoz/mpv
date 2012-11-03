@@ -142,6 +142,7 @@ SOURCES = talloc.c \
           audio/filter/af_karaoke.c \
           audio/filter/af_lavcac3enc.c \
           audio/filter/af_lavcresample.c \
+          audio/filter/af_lavr.c \
           audio/filter/af_pan.c \
           audio/filter/af_resample.c \
           audio/filter/af_scaletempo.c \
