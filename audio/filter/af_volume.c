@@ -147,7 +147,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 
   // Basic operation volume control only (used on slow machines)
   if(af->data->format == (AF_FORMAT_S16_NE)){
-    int16_t*    a   = (int16_t*)c->audio;	// Audio data
+    int16_t*    a   = (int16_t*)c->planes[0];	// Audio data
     int         len = c->len/2;			// Number of samples
     for (int ch = 0; ch < nch; ch++) {
       int vol = 256.0 * s->level[ch];
@@ -161,7 +161,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   }
   // Machine is fast and data is floating point
   else if(af->data->format == (AF_FORMAT_FLOAT_NE)){
-    float*   	a   	= (float*)c->audio;	// Audio data
+    float*   	a   	= (float*)c->planes[0];	// Audio data
     int       	len 	= c->len/4;		// Number of samples
     for (int ch = 0; ch < nch; ch++) {
       // Volume control (fader)

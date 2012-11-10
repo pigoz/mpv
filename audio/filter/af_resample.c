@@ -80,10 +80,10 @@ static int linint(struct mp_audio* c,struct mp_audio* l, af_resample_t* s)
   uint32_t	len   = 0; 		// Number of input samples
   uint32_t	nch   = l->nch;   	// Words pre transfer
   uint64_t	step  = s->step;
-  int16_t*	in16  = ((int16_t*)c->audio);
-  int16_t*	out16 = ((int16_t*)l->audio);
-  int32_t*	in32  = ((int32_t*)c->audio);
-  int32_t*	out32 = ((int32_t*)l->audio);
+  int16_t*	in16  = ((int16_t*)c->planes[0]);
+  int16_t*	out16 = ((int16_t*)l->planes[0]);
+  int32_t*	in32  = ((int32_t*)c->planes[0]);
+  int32_t*	out32 = ((int32_t*)l->planes[0]);
   uint64_t 	end   = ((((uint64_t)c->len)/2LL)<<STEPACCURACY);
   uint64_t	pt    = s->pt;
   uint16_t 	tmp;
@@ -312,7 +312,7 @@ static void uninit(struct af_instance* af)
     free(s);
   }
   if(af->data)
-    free(af->data->audio);
+    free(af->data->planes[0]);
   free(af->data);
 }
 
@@ -362,7 +362,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   }
 
   // Set output data
-  c->audio = l->audio;
+  c->planes[0] = l->planes[0];
   c->len   = len*l->bps;
   c->rate  = l->rate;
 

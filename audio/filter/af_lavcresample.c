@@ -103,7 +103,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
     if(af->data)
-        free(af->data->audio);
+        free(af->data->planes[0]);
     free(af->data);
     if(af->setup){
         int i;
@@ -120,7 +120,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 {
   af_resample_t *s = af->setup;
   int i, j, consumed, ret = 0;
-  int16_t *in = (int16_t*)data->audio;
+  int16_t *in = (int16_t*)data->planes[0];
   int16_t *out;
   int chans   = data->nch;
   int in_len  = data->len/(2*chans);
@@ -130,7 +130,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
       return NULL;
 
-  out= (int16_t*)af->data->audio;
+  out= (int16_t*)af->data->planes[0];
 
   out_len= min(out_len, af->data->len/(2*chans));
 
@@ -182,7 +182,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
       }
   }
 
-  data->audio = af->data->audio;
+  data->planes[0] = af->data->planes[0];
   data->len   = out_len*chans*2;
   data->rate  = af->data->rate;
   return data;

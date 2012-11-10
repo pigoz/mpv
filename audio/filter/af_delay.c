@@ -129,7 +129,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   for(ch=0;ch<nch;ch++){
     switch(c->bps){
     case 1:{
-      int8_t* a = c->audio;
+      int8_t* a = c->planes[0];
       int8_t* q = s->q[ch];
       int wi = s->wi[ch];
       ri = s->ri;
@@ -143,7 +143,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
       break;
     }
     case 2:{
-      int16_t* a = c->audio;
+      int16_t* a = c->planes[0];
       int16_t* q = s->q[ch];
       int wi = s->wi[ch];
       ri = s->ri;
@@ -157,7 +157,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
       break;
     }
     case 4:{
-      int32_t* a = c->audio;
+      int32_t* a = c->planes[0];
       int32_t* q = s->q[ch];
       int wi = s->wi[ch];
       ri = s->ri;

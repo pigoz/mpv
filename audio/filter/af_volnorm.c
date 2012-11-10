@@ -123,7 +123,7 @@ static void uninit(struct af_instance* af)
 static void method1_int16(af_volnorm_t *s, struct mp_audio *c)
 {
   register int i = 0;
-  int16_t *data = (int16_t*)c->audio;	// Audio data
+  int16_t *data = (int16_t*)c->planes[0];	// Audio data
   int len = c->len/2;		// Number of samples
   float curavg = 0.0, newavg, neededmul;
   int tmp;
@@ -165,7 +165,7 @@ static void method1_int16(af_volnorm_t *s, struct mp_audio *c)
 static void method1_float(af_volnorm_t *s, struct mp_audio *c)
 {
   register int i = 0;
-  float *data = (float*)c->audio;	// Audio data
+  float *data = (float*)c->planes[0];	// Audio data
   int len = c->len/4;		// Number of samples
   float curavg = 0.0, newavg, neededmul, tmp;
 
@@ -202,7 +202,7 @@ static void method1_float(af_volnorm_t *s, struct mp_audio *c)
 static void method2_int16(af_volnorm_t *s, struct mp_audio *c)
 {
   register int i = 0;
-  int16_t *data = (int16_t*)c->audio;	// Audio data
+  int16_t *data = (int16_t*)c->planes[0];	// Audio data
   int len = c->len/2;		// Number of samples
   float curavg = 0.0, newavg, avg = 0.0;
   int tmp, totallen = 0;
@@ -252,7 +252,7 @@ static void method2_int16(af_volnorm_t *s, struct mp_audio *c)
 static void method2_float(af_volnorm_t *s, struct mp_audio *c)
 {
   register int i = 0;
-  float *data = (float*)c->audio;	// Audio data
+  float *data = (float*)c->planes[0];	// Audio data
   int len = c->len/4;		// Number of samples
   float curavg = 0.0, newavg, avg = 0.0, tmp;
   int totallen = 0;

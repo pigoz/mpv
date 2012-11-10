@@ -91,7 +91,7 @@ static struct mp_audio* play_s16(struct af_instance* af, struct mp_audio* data)
 {
   af_extrastereo_t *s = af->setup;
   register int i = 0;
-  int16_t *a = (int16_t*)data->audio;	// Audio data
+  int16_t *a = (int16_t*)data->planes[0];	// Audio data
   int len = data->len/2;		// Number of samples
   int avg, l, r;
 
@@ -113,7 +113,7 @@ static struct mp_audio* play_float(struct af_instance* af, struct mp_audio* data
 {
   af_extrastereo_t *s = af->setup;
   register int i = 0;
-  float *a = (float*)data->audio;	// Audio data
+  float *a = (float*)data->planes[0];	// Audio data
   int len = data->len/4;		// Number of samples
   float avg, l, r;
 

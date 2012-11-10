@@ -155,7 +155,7 @@ static int control(struct af_instance *af, int cmd, void *arg)
 static void uninit(struct af_instance* af)
 {
     if (af->data)
-        free(af->data->audio);
+        free(af->data->planes[0]);
     free(af->data);
     if (af->setup) {
         af_ac3enc_t *s = af->setup;
@@ -190,9 +190,9 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
         mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Reallocating memory in module %s, "
                "old len = %i, new len = %i\n", af->info->name, af->data->len,
                 max_output_len);
-        free(af->data->audio);
-        af->data->audio = malloc(max_output_len);
-        if (!af->data->audio) {
+        free(af->data->planes[0]);
+        af->data->planes[0] = malloc(max_output_len);
+        if (!af->data->planes[0]) {
             mp_msg(MSGT_AFILTER, MSGL_FATAL, "[libaf] Could not allocate memory \n");
             return NULL;
         }
@@ -200,8 +200,8 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
     }
 
     l = af->data;           // Local data
-    buf = l->audio;
-    src = c->audio;
+    buf = l->planes[0];
+    src = c->planes[0];
     left = c->len;
 
 
@@ -215,7 +215,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
         }
 
         dest = s->add_iec61937_header ? buf + 8 : buf;
-        destsize = (char *)l->audio + l->len - buf;
+        destsize = (char *)l->planes[0] + l->len - buf;
 
         if (s->pending_len) {
             int needs = s->expect_len - s->pending_len;
@@ -266,7 +266,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
         outsize += len;
         buf += len;
     }
-    c->audio = l->audio;
+    c->planes[0] = l->planes[0];
     c->nch   = 2;
     c->bps   = 2;
     c->len   = outsize;

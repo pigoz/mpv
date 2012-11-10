@@ -53,7 +53,7 @@ static void uninit(struct af_instance* af)
 static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 {
 	struct mp_audio*	c	= data;		 // Current working data
-	float*		a	= c->audio;	 // Audio data
+	float*		a	= c->planes[0];	 // Audio data
 	int			len	= c->len/4;	 // Number of samples in current audio block
 	int			nch	= c->nch;	 // Number of channels
 	register int  i;

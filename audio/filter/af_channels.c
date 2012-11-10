@@ -250,8 +250,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
   free(af->setup);
-  if (af->data)
-      free(af->data->audio);
+  af_free_planes(af->data);
   free(af->data);
 }
 
@@ -267,17 +266,17 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
     return NULL;
 
   // Reset unused channels
-  memset(l->audio,0,c->len / c->nch * l->nch);
+  memset(l->planes[0],0,c->len / c->nch * l->nch);
 
   if(AF_OK == check_routes(s,c->nch,l->nch))
     for(i=0;i<s->nr;i++)
-      copy(c->audio,l->audio,c->nch,s->route[i][FR],
+      copy(c->planes[0],l->planes[0],c->nch,s->route[i][FR],
 	   l->nch,s->route[i][TO],c->len,c->bps);
 
   // Set output data
-  c->audio = l->audio;
-  c->len   = c->len / c->nch * l->nch;
-  c->nch   = l->nch;
+  c->planes[0] = l->planes[0];
+  c->len       = c->len / c->nch * l->nch;
+  c->nch       = l->nch;
 
   return c;
 }

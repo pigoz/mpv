@@ -97,8 +97,8 @@
   while(ci--){
     // Temporary pointers
     register FORMAT*	x     = s->xq[ci];
-    register FORMAT*	in    = ((FORMAT*)c->audio)+ci;
-    register FORMAT*	out   = ((FORMAT*)l->audio)+ci;
+    register FORMAT*	in    = ((FORMAT*)c->planes[0])+ci;
+    register FORMAT*	out   = ((FORMAT*)l->planes[0])+ci;
     FORMAT* 		end   = in+ns; // Block loop end
     wi = s->wi; xi = s->xi;
 
@@ -141,8 +141,8 @@
   while(ci--){
     // Temporary pointers
     register FORMAT*	x     = s->xq[ci];
-    register FORMAT*	in    = ((FORMAT*)c->audio)+ci;
-    register FORMAT*	out   = ((FORMAT*)l->audio)+ci;
+    register FORMAT*	in    = ((FORMAT*)c->planes[0])+ci;
+    register FORMAT*	out   = ((FORMAT*)l->planes[0])+ci;
     register FORMAT* 	end   = in+ns;    // Block loop end
     i = s->i; wi = s->wi; xi = s->xi;
 

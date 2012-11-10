@@ -170,7 +170,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
   if (af->data)
-      free(af->data->audio);
+      free(af->data->planes[0]);
   free(af->data);
   af->setup = 0;
 }
@@ -184,9 +184,9 @@ static struct mp_audio* play_swapendian(struct af_instance* af, struct mp_audio*
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
     return NULL;
 
-  endian(c->audio,l->audio,len,c->bps);
+  endian(c->planes[0],l->planes[0],len,c->bps);
 
-  c->audio = l->audio;
+  c->planes[0] = l->planes[0];
   c->format = l->format;
 
   return c;
@@ -201,9 +201,9 @@ static struct mp_audio* play_float_s16(struct af_instance* af, struct mp_audio* 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
     return NULL;
 
-  float2int(c->audio, l->audio, len, 2);
+  float2int(c->planes[0], l->planes[0], len, 2);
 
-  c->audio = l->audio;
+  c->planes[0] = l->planes[0];
   c->len = len*2;
   c->bps = 2;
   c->format = l->format;
@@ -220,9 +220,9 @@ static struct mp_audio* play_s16_float(struct af_instance* af, struct mp_audio* 
   if(AF_OK != RESIZE_LOCAL_BUFFER(af,data))
     return NULL;
 
-  int2float(c->audio, l->audio, len, 2);
+  int2float(c->planes[0], l->planes[0], len, 2);
 
-  c->audio = l->audio;
+  c->planes[0] = l->planes[0];
   c->len = len*4;
   c->bps = 4;
   c->format = l->format;
@@ -242,33 +242,33 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 
   // Change to cpu native endian format
   if((c->format&AF_FORMAT_END_MASK)!=AF_FORMAT_NE)
-    endian(c->audio,c->audio,len,c->bps);
+    endian(c->planes[0],c->planes[0],len,c->bps);
 
   // Conversion table
   if((c->format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_MU_LAW) {
-    from_ulaw(c->audio, l->audio, len, l->bps, l->format&AF_FORMAT_POINT_MASK);
+    from_ulaw(c->planes[0], l->planes[0], len, l->bps, l->format&AF_FORMAT_POINT_MASK);
     if(AF_FORMAT_A_LAW == (l->format&AF_FORMAT_SPECIAL_MASK))
-      to_ulaw(l->audio, l->audio, len, 1, AF_FORMAT_SI);
+      to_ulaw(l->planes[0], l->planes[0], len, 1, AF_FORMAT_SI);
     if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
-      si2us(l->audio,len,l->bps);
+      si2us(l->planes[0],len,l->bps);
   } else if((c->format & AF_FORMAT_SPECIAL_MASK) == AF_FORMAT_A_LAW) {
-    from_alaw(c->audio, l->audio, len, l->bps, l->format&AF_FORMAT_POINT_MASK);
+    from_alaw(c->planes[0], l->planes[0], len, l->bps, l->format&AF_FORMAT_POINT_MASK);
     if(AF_FORMAT_A_LAW == (l->format&AF_FORMAT_SPECIAL_MASK))
-      to_alaw(l->audio, l->audio, len, 1, AF_FORMAT_SI);
+      to_alaw(l->planes[0], l->planes[0], len, 1, AF_FORMAT_SI);
     if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
-      si2us(l->audio,len,l->bps);
+      si2us(l->planes[0],len,l->bps);
   } else if((c->format & AF_FORMAT_POINT_MASK) == AF_FORMAT_F) {
     switch(l->format&AF_FORMAT_SPECIAL_MASK){
     case(AF_FORMAT_MU_LAW):
-      to_ulaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_ulaw(c->planes[0], l->planes[0], len, c->bps, c->format&AF_FORMAT_POINT_MASK);
       break;
     case(AF_FORMAT_A_LAW):
-      to_alaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_alaw(c->planes[0], l->planes[0], len, c->bps, c->format&AF_FORMAT_POINT_MASK);
       break;
     default:
-      float2int(c->audio, l->audio, len, l->bps);
+      float2int(c->planes[0], l->planes[0], len, l->bps);
       if((l->format&AF_FORMAT_SIGN_MASK) == AF_FORMAT_US)
-	si2us(l->audio,len,l->bps);
+	si2us(l->planes[0],len,l->bps);
       break;
     }
   } else {
@@ -276,35 +276,35 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 
     // Change signed/unsigned
     if((c->format&AF_FORMAT_SIGN_MASK) != (l->format&AF_FORMAT_SIGN_MASK)){
-      si2us(c->audio,len,c->bps);
+      si2us(c->planes[0],len,c->bps);
     }
     // Convert to special formats
     switch(l->format&(AF_FORMAT_SPECIAL_MASK|AF_FORMAT_POINT_MASK)){
     case(AF_FORMAT_MU_LAW):
-      to_ulaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_ulaw(c->planes[0], l->planes[0], len, c->bps, c->format&AF_FORMAT_POINT_MASK);
       break;
     case(AF_FORMAT_A_LAW):
-      to_alaw(c->audio, l->audio, len, c->bps, c->format&AF_FORMAT_POINT_MASK);
+      to_alaw(c->planes[0], l->planes[0], len, c->bps, c->format&AF_FORMAT_POINT_MASK);
       break;
     case(AF_FORMAT_F):
-      int2float(c->audio, l->audio, len, c->bps);
+      int2float(c->planes[0], l->planes[0], len, c->bps);
       break;
     default:
       // Change the number of bits
       if(c->bps != l->bps)
-	change_bps(c->audio,l->audio,len,c->bps,l->bps);
+	change_bps(c->planes[0],l->planes[0],len,c->bps,l->bps);
       else
-	memcpy(l->audio,c->audio,len*c->bps);
+	memcpy(l->planes[0],c->planes[0],len*c->bps);
       break;
     }
   }
 
   // Switch from cpu native endian to the correct endianness
   if((l->format&AF_FORMAT_END_MASK)!=AF_FORMAT_NE)
-    endian(l->audio,l->audio,len,l->bps);
+    endian(l->planes[0],l->planes[0],len,l->bps);
 
   // Set output data
-  c->audio  = l->audio;
+  c->planes[0]  = l->planes[0];
   c->len    = len*l->bps;
   c->bps    = l->bps;
   c->format = l->format;

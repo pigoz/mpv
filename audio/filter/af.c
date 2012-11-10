@@ -85,6 +85,28 @@ static struct af_info *filter_list[] = {
 // CPU speed
 int *af_cpu_speed = NULL;
 
+int af_n_planes(struct mp_audio *audio)
+{
+    if ((audio->format & AF_FORMAT_INTERLEAVING_MASK) == AF_FORMAT_PLANAR)
+        return audio->nch;
+    else
+        return 1;
+}
+
+void af_alloc_planes(struct mp_audio *audio, int len)
+{
+    int plane_len = len / af_n_planes(audio);
+    for (int i = 0; i < af_n_planes(audio); i++)
+        audio->planes[i] = malloc(plane_len);
+}
+
+void af_free_planes(struct mp_audio *audio)
+{
+    for (int i = 0; i < af_n_planes(audio); i++)
+        if (audio->planes[i])
+            free(audio->planes[i]);
+}
+
 /* Find a filter in the static list of filters using it's name. This
    function is used internally */
 static struct af_info *af_find(char *name)
@@ -301,7 +323,7 @@ int af_reinit(struct af_stream *s, struct af_instance *af)
         else
             memcpy(&in, af->prev->data, sizeof(struct mp_audio));
         // Reset just in case...
-        in.audio = NULL;
+        in.planes = NULL;
         in.len = 0;
 
         rv = af->control(af, AF_CONTROL_REINIT, &in);
@@ -504,7 +526,7 @@ int af_init(struct af_stream *s)
         return -1;
 
     // Precaution in case caller is misbehaving
-    s->input.audio  = s->output.audio  = NULL;
+    s->input.planes = s->output.planes = NULL;
     s->input.len    = s->output.len    = 0;
 
     // Figure out how fast the machine is
@@ -686,14 +708,19 @@ int af_resize_local_buffer(struct af_instance *af, struct mp_audio *data)
     register int len = af_lencalc(af->mul, data);
     mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Reallocating memory in module %s, "
            "old len = %i, new len = %i\n", af->info->name, af->data->len, len);
+
     // If there is a buffer free it
-    free(af->data->audio);
+    af_free_planes(af->data);
+
     // Create new buffer and check that it is OK
-    af->data->audio = malloc(len);
-    if (!af->data->audio) {
-        mp_msg(MSGT_AFILTER, MSGL_FATAL, "[libaf] Could not allocate memory \n");
-        return AF_ERROR;
-    }
+    af_alloc_planes(af->data, len);
+
+    for (int i =  0; i < af_n_planes(af->data); i++)
+        if (!af->data->planes[i]) {
+            mp_msg(MSGT_AFILTER, MSGL_FATAL, "[libaf] Could not allocate"
+                                             " memory\n");
+            return AF_ERROR;
+        }
     af->data->len = len;
     return AF_OK;
 }

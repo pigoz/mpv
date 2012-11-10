@@ -69,7 +69,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 {
   af_sweept *s = af->setup;
   int i, j;
-  int16_t *in = (int16_t*)data->audio;
+  int16_t *in = (int16_t*)data->planes[0];
   int chans   = data->nch;
   int in_len  = data->len/(2*chans);
 
