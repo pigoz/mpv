@@ -107,7 +107,7 @@ static int fill_queue(struct af_instance* af, struct mp_audio* data, int offset)
     int bytes_copy = FFMIN(s->bytes_queue - s->bytes_queued, bytes_in);
     assert(bytes_copy >= 0);
     memcpy(s->buf_queue + s->bytes_queued,
-           (int8_t*)data->audio + offset,
+           (int8_t*)data->planes[0] + offset,
            bytes_copy);
     s->bytes_queued += bytes_copy;
     offset += bytes_copy;
@@ -236,8 +236,8 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   if (max_bytes_out > af->data->len) {
     mp_msg(MSGT_AFILTER, MSGL_V, "[libaf] Reallocating memory in module %s, "
           "old len = %i, new len = %i\n",af->info->name,af->data->len,max_bytes_out);
-    af->data->audio = realloc(af->data->audio, max_bytes_out);
-    if (!af->data->audio) {
+    af->data->planes[0] = realloc(af->data->planes[0], max_bytes_out);
+    if (!af->data->planes[0]) {
       mp_msg(MSGT_AFILTER, MSGL_FATAL, "[libaf] Could not allocate memory\n");
       return NULL;
     }
@@ -245,7 +245,7 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   }
 
   offset_in = fill_queue(af, data, 0);
-  pout = af->data->audio;
+  pout = af->data->planes[0];
   while (s->bytes_queued >= s->bytes_queue) {
     int ti;
     float tf;
@@ -279,8 +279,8 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
   // after receiving only a part of that input.
   af->delay = s->bytes_queued - s->bytes_to_slide;
 
-  data->audio = af->data->audio;
-  data->len   = pout - (int8_t *)af->data->audio;
+  data->planes[0] = af->data->planes[0];
+  data->len   = pout - (int8_t *)af->data->planes[0];
   return data;
 }
 
@@ -536,7 +536,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
   af_scaletempo_t* s = af->setup;
-  free(af->data->audio);
+  af_free_planes(af->data);
   free(af->data);
   free(s->buf_queue);
   free(s->buf_overlap);

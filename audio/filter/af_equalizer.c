@@ -195,8 +195,8 @@ static struct mp_audio* play(struct af_instance* af, struct mp_audio* data)
 
   while(ci--){
     float*	g   = s->g[ci];      // Gain factor
-    float*	in  = ((float*)c->audio)+ci;
-    float*	out = ((float*)c->audio)+ci;
+    float*	in  = ((float*)c->planes[0])+ci;
+    float*	out = ((float*)c->planes[0])+ci;
     float* 	end = in + c->len/4; // Block loop end
 
     while(in < end){

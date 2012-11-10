@@ -45,7 +45,7 @@ static struct mp_audio *play(struct af_instance *af, struct mp_audio *data)
     struct af_lavr_priv *p = af->setup;
     struct mp_audio *in    = data;
     struct mp_audio *out   = af->data;
-    uint8_t *in_data = data->audio;
+    uint8_t *in_data = data->planes[0];
 
     print_format(af->data, "play out sample_fmt");
     print_format(data,     "play in sample_fmt");
@@ -90,7 +90,7 @@ static struct mp_audio *play(struct af_instance *af, struct mp_audio *data)
         p->audio_data = talloc_realloc_size(p, p->audio_data, out_size);
 
     //int out_samples =
-    //    avresample_convert(p->avr, &(p->audio_data), out_linesize, nb_samples,
+    //    avresample_convert(p->avr, &(p->planes[0]_data), out_linesize, nb_samples,
     //                               &in_data, out_linesize, nb_samples);
 
     //if (out_samples < 0) {
@@ -100,7 +100,7 @@ static struct mp_audio *play(struct af_instance *af, struct mp_audio *data)
     //avresample_close(p->avr);
 
     //out->rate  = in->rate;
-    //out->audio = p->audio_data;
+    //out->planes[0] = p->planes[0]_data;
     //out->len   = in->len;
 
     return in;
