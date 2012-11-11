@@ -327,7 +327,7 @@ static int decode_new_packet(struct sh_audio *sh)
 }
 
 
-static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
+static int decode_audio(sh_audio_t *sh_audio, unsigned char **planes, int minlen,
                         int maxlen)
 {
     struct priv *priv = sh_audio->context;
@@ -347,14 +347,14 @@ static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
         size = FFMIN(size, priv->output_left);
         if (size > maxlen)
             abort();
-        memcpy(buf, priv->output, size);
+        memcpy(planes[0], priv->output, size);
         priv->output += size;
         priv->output_left -= size;
         if (len < 0)
             len = size;
         else
             len += size;
-        buf += size;
+        planes[0] += size;
         maxlen -= size;
         sh_audio->pts_bytes += size;
     }

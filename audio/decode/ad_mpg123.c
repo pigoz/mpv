@@ -448,12 +448,12 @@ static void update_info(sh_audio_t *sh)
 }
 #endif
 
-static int decode_audio(sh_audio_t *sh, unsigned char *buf, int minlen,
+static int decode_audio(sh_audio_t *sh, unsigned char **planes, int minlen,
                         int maxlen)
 {
     int bytes;
 
-    bytes = decode_a_bit(sh, buf, maxlen);
+    bytes = decode_a_bit(sh, planes[0], maxlen);
     if (bytes == 0)
         return -1;              /* EOF */
 

@@ -221,7 +221,7 @@ fail:
     return 0;
 }
 
-static int decode_audio(sh_audio_t *sh, unsigned char *buf,
+static int decode_audio(sh_audio_t *sh, unsigned char **planes,
                         int minlen, int maxlen)
 {
     struct spdifContext *spdif_ctx = sh->context;
@@ -233,7 +233,7 @@ static int decode_audio(sh_audio_t *sh, unsigned char *buf,
 
     consumed = spdif_ctx->out_buffer_len  = 0;
     spdif_ctx->out_buffer_size = maxlen;
-    spdif_ctx->out_buffer      = buf;
+    spdif_ctx->out_buffer      = planes[0];
     while (spdif_ctx->out_buffer_len + spdif_ctx->iec61937_packet_size < maxlen
            && spdif_ctx->out_buffer_len < minlen) {
         if (sh->ds->eof)

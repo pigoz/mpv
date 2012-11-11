@@ -336,7 +336,7 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     int old_channels = sh->channels;
     int old_sample_format = sh->sample_format;
     while (sh->a_buffer_len < len) {
-	unsigned char *buf = sh->a_buffer + sh->a_buffer_len;
+	unsigned char **buf = sh->a_buffer + sh->a_buffer_len;
 	int minlen = len - sh->a_buffer_len;
 	int maxlen = sh->a_buffer_size - sh->a_buffer_len;
 	int ret = sh->ad_driver->decode_audio(sh, buf, minlen, maxlen);
@@ -354,7 +354,7 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
 
     // Filter
     struct mp_audio filter_input = {
-	.audio = sh->a_buffer,
+	.planes = sh->a_buffer,
 	.len = len,
 	.rate = sh->samplerate,
 	.nch = sh->channels,
@@ -365,7 +365,7 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     if (!filter_output)
 	return -1;
     set_min_out_buffer_size(outbuf, outbuf->len + filter_output->len);
-    memcpy(outbuf->start + outbuf->len, filter_output->audio,
+    memcpy(outbuf->start + outbuf->len, filter_output->planes,
            filter_output->len);
     outbuf->len += filter_output->len;
 

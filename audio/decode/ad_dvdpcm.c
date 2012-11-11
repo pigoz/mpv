@@ -101,7 +101,7 @@ static int control(sh_audio_t *sh,int cmd,void* arg, ...)
   return CONTROL_UNKNOWN;
 }
 
-static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int maxlen)
+static int decode_audio(sh_audio_t *sh_audio,unsigned char **planes,int minlen,int maxlen)
 {
   int j,len;
   if (sh_audio->samplesize == 3) {
@@ -114,21 +114,21 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
         len = demux_read_data(sh_audio->ds, tmp, 10);
         if (len < 10) break;
         // first sample
-        buf[j + 0] = tmp[0];
-        buf[j + 1] = tmp[1];
-        buf[j + 2] = tmp[8] & 0xf0;
+        planes[0][j + 0] = tmp[0];
+        planes[0][j + 1] = tmp[1];
+        planes[0][j + 2] = tmp[8] & 0xf0;
         // second sample
-        buf[j + 3] = tmp[2];
-        buf[j + 4] = tmp[3];
-        buf[j + 5] = tmp[8] << 4;
+        planes[0][j + 3] = tmp[2];
+        planes[0][j + 4] = tmp[3];
+        planes[0][j + 5] = tmp[8] << 4;
         // third sample
-        buf[j + 6] = tmp[4];
-        buf[j + 7] = tmp[5];
-        buf[j + 8] = tmp[9] & 0xf0;
+        planes[0][j + 6] = tmp[4];
+        planes[0][j + 7] = tmp[5];
+        planes[0][j + 8] = tmp[9] & 0xf0;
         // fourth sample
-        buf[j + 9] = tmp[6];
-        buf[j + 10] = tmp[7];
-        buf[j + 11] = tmp[9] << 4;
+        planes[0][j + 9] = tmp[6];
+        planes[0][j + 10] = tmp[7];
+        planes[0][j + 11] = tmp[9] << 4;
       }
       len = j;
     } else {
@@ -138,25 +138,25 @@ static int decode_audio(sh_audio_t *sh_audio,unsigned char *buf,int minlen,int m
         len = demux_read_data(sh_audio->ds, tmp, 12);
         if (len < 12) break;
         // first sample
-        buf[j + 0] = tmp[0];
-        buf[j + 1] = tmp[1];
-        buf[j + 2] = tmp[8];
+        planes[0][j + 0] = tmp[0];
+        planes[0][j + 1] = tmp[1];
+        planes[0][j + 2] = tmp[8];
         // second sample
-        buf[j + 3] = tmp[2];
-        buf[j + 4] = tmp[3];
-        buf[j + 5] = tmp[9];
+        planes[0][j + 3] = tmp[2];
+        planes[0][j + 4] = tmp[3];
+        planes[0][j + 5] = tmp[9];
         // third sample
-        buf[j + 6] = tmp[4];
-        buf[j + 7] = tmp[5];
-        buf[j + 8] = tmp[10];
+        planes[0][j + 6] = tmp[4];
+        planes[0][j + 7] = tmp[5];
+        planes[0][j + 8] = tmp[10];
         // fourth sample
-        buf[j + 9] = tmp[6];
-        buf[j + 10] = tmp[7];
-        buf[j + 11] = tmp[11];
+        planes[0][j + 9] = tmp[6];
+        planes[0][j + 10] = tmp[7];
+        planes[0][j + 11] = tmp[11];
       }
       len = j;
     }
   } else
-  len=demux_read_data(sh_audio->ds,buf,(minlen+3)&(~3));
+  len=demux_read_data(sh_audio->ds,planes[0],(minlen+3)&(~3));
   return len;
 }

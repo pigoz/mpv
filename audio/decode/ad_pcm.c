@@ -163,7 +163,7 @@ static int control(sh_audio_t *sh, int cmd, void *arg, ...)
     return CONTROL_UNKNOWN;
 }
 
-static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
+static int decode_audio(sh_audio_t *sh_audio, unsigned char **planes, int minlen,
                         int maxlen)
 {
     int unitsize = sh_audio->channels * sh_audio->samplesize;
@@ -198,7 +198,7 @@ static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
         int from_stored = ctx->buffer_len - ctx->buffer_pos;
         if (from_stored > minlen - len)
             from_stored = minlen - len;
-        memcpy(buf + len, ctx->buffer + ctx->buffer_pos, from_stored);
+        memcpy(planes[0] + len, ctx->buffer + ctx->buffer_pos, from_stored);
         ctx->buffer_pos += from_stored;
         sh_audio->pts_bytes += from_stored;
         len += from_stored;
@@ -211,7 +211,7 @@ static int decode_audio(sh_audio_t *sh_audio, unsigned char *buf, int minlen,
     if (len == 0)
         len = -1;               // The loop above only exits at error/EOF
     if (len > 0 && sh_audio->channels >= 5) {
-        reorder_channel_nch(buf, AF_CHANNEL_LAYOUT_WAVEEX_DEFAULT,
+        reorder_channel_nch(planes[0], AF_CHANNEL_LAYOUT_WAVEEX_DEFAULT,
                             AF_CHANNEL_LAYOUT_MPLAYER_DEFAULT,
                             sh_audio->channels, len / sh_audio->samplesize,
                             sh_audio->samplesize);

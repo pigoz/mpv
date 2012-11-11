@@ -111,7 +111,7 @@ typedef struct sh_audio {
     int a_in_buffer_size;
     // decoder buffers:
     int audio_out_minsize;  // minimal output from decoder may be this much
-    char *a_buffer;         // buffer for decoder output
+    char **a_buffer;         // buffer for decoder output
     int a_buffer_len;
     int a_buffer_size;
     struct af_stream *afilter;          // the audio filter stream
