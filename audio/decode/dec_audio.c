@@ -60,6 +60,14 @@ void afm_help(void)
 		   mpcodecs_ad_drivers[i]->info->name);
 }
 
+static int sh_n_planes(sh_audio_t *sh)
+{
+    if ((sh->sample_format & AF_FORMAT_INTERLEAVING_MASK) == AF_FORMAT_PLANAR)
+        return sh->channels;
+    else
+        return 1;
+}
+
 static int init_audio_codec(sh_audio_t *sh_audio)
 {
     assert(!sh_audio->initialized);
@@ -93,8 +101,11 @@ static int init_audio_codec(sh_audio_t *sh_audio)
     mp_tmsg(MSGT_DECAUDIO, MSGL_V, "dec_audio: Allocating %d + %d = %d bytes for output buffer.\n",
 	   sh_audio->audio_out_minsize, base_size, sh_audio->a_buffer_size);
 
-    sh_audio->a_buffer = av_mallocz(sh_audio->a_buffer_size);
-    if (!sh_audio->a_buffer)
+    int plane_size = sh_audio->a_buffer_size / sh_n_planes(sh_audio);
+    for (int i = 0; i < sh_n_planes(sh_audio); i++)
+        sh_audio->a_buffer[i] = av_mallocz(sh_audio->a_buffer_size);
+
+    if (!sh_audio->a_buffer[0])
         abort();
     sh_audio->a_buffer_len = 0;
 
@@ -336,7 +347,7 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     int old_channels = sh->channels;
     int old_sample_format = sh->sample_format;
     while (sh->a_buffer_len < len) {
-	unsigned char **buf = sh->a_buffer + sh->a_buffer_len;
+	unsigned char **buf = sh->a_buffer; // + sh->a_buffer_len;
 	int minlen = len - sh->a_buffer_len;
 	int maxlen = sh->a_buffer_size - sh->a_buffer_len;
 	int ret = sh->ad_driver->decode_audio(sh, buf, minlen, maxlen);
