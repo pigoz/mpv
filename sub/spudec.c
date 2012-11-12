@@ -48,12 +48,14 @@
 #include "core/mp_common.h"
 #include "video/csputils.h"
 
+#define SPU_PALETTE_SIZE 4
+
 typedef struct spu_packet_t packet_t;
 struct spu_packet_t {
   int is_decoded;
   unsigned char *packet;
   int data_len;
-  unsigned int palette[4];
+  unsigned int palette[SPU_PALETTE_SIZE];
   unsigned int alpha[4];
   unsigned int control_start;	/* index of start of control data */
   unsigned int current_nibble[2]; /* next data nibble (4 bits) to be
@@ -188,7 +190,7 @@ static int spudec_alloc_image(spudec_handle_t *this, int stride, int height)
 
 static void setup_palette(spudec_handle_t *spu, uint32_t palette[256])
 {
-    memset(palette, 0, sizeof(palette));
+    memset(palette, 0, sizeof(*palette) * SPU_PALETTE_SIZE);
     struct mp_csp_params csp = MP_CSP_PARAMS_DEFAULTS;
     csp.int_bits_in = 8;
     csp.int_bits_out = 8;

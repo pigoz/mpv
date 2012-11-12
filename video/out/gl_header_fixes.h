@@ -245,7 +245,7 @@
 #endif
 
 // FreeBSD 10.0-CURRENT lacks the GLX_ARB_create_context extension completely
-#ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
+#if !defined(__APPLE__) && !defined(GLX_CONTEXT_MAJOR_VERSION_ARB)
 #define GLX_CONTEXT_MAJOR_VERSION_ARB           0x2091
 #define GLX_CONTEXT_MINOR_VERSION_ARB           0x2092
 #define GLX_CONTEXT_FLAGS_ARB                   0x2094
