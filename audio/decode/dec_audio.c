@@ -102,6 +102,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
 	   sh_audio->audio_out_minsize, base_size, sh_audio->a_buffer_size);
 
     int plane_size = sh_audio->a_buffer_size / sh_n_planes(sh_audio);
+    sh_audio->a_buffer = av_mallocz(sizeof(char*));
     for (int i = 0; i < sh_n_planes(sh_audio); i++)
         sh_audio->a_buffer[i] = av_mallocz(sh_audio->a_buffer_size);
 
