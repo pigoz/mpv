@@ -352,9 +352,11 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
 	sh->a_buffer_len += ret;
     }
 
+    void *planes = { sh->a_buffer };
+
     // Filter
     struct mp_audio filter_input = {
-	.audio = sh->a_buffer,
+	.planes = planes,
 	.len = len,
 	.rate = sh->samplerate,
 	.nch = sh->channels,
@@ -365,7 +367,7 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     if (!filter_output)
 	return -1;
     set_min_out_buffer_size(outbuf, outbuf->len + filter_output->len);
-    memcpy(outbuf->start + outbuf->len, filter_output->audio,
+    memcpy(outbuf->start + outbuf->len, filter_output->planes,
            filter_output->len);
     outbuf->len += filter_output->len;
 
