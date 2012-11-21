@@ -192,22 +192,6 @@ static int init(sh_audio_t *sh_audio)
         sh_audio->ds->ss_mul = 2 * sh_audio->wf->nChannels; // 1 byte*ch/packet
     }
 
-    // Decode at least 1 byte:  (to get header filled)
-    for (int tries = 0;;) {
-        int x = decode_audio(sh_audio, sh_audio->a_buffer, 1,
-                             sh_audio->a_buffer_size);
-        if (x > 0) {
-            sh_audio->a_buffer_len = x;
-            break;
-        }
-        if (++tries >= 5) {
-            mp_msg(MSGT_DECAUDIO, MSGL_ERR,
-                   "ad_ffmpeg: initial decode failed\n");
-            uninit(sh_audio);
-            return 0;
-        }
-    }
-
     sh_audio->i_bps = lavc_context->bit_rate / 8;
     if (sh_audio->wf && sh_audio->wf->nAvgBytesPerSec)
         sh_audio->i_bps = sh_audio->wf->nAvgBytesPerSec;

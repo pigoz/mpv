@@ -104,6 +104,22 @@ static int init_audio_codec(sh_audio_t *sh_audio)
 	return 0;
     }
 
+    // Decode at least 1 byte: (to get header filled)
+    for (int tries = 0;;) {
+        int x = sh_audio->ad_driver->decode_audio(sh_audio,
+                    sh_audio->a_buffer, 1, sh_audio->a_buffer_size);
+        if (x > 0) {
+            sh_audio->a_buffer_len = x;
+            break;
+        }
+        if (++tries >= 5) {
+            mp_msg(MSGT_DECAUDIO, MSGL_ERR,
+                   "dec_audio: initial decode failed\n");
+            sh_audio->ad_driver->uninit(sh_audio);
+            return 0;
+        }
+    }
+
     sh_audio->initialized = 1;
 
     if (!sh_audio->channels || !sh_audio->samplerate) {
