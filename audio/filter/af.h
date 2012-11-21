@@ -37,7 +37,7 @@ struct af_instance;
 
 // Audio data chunk
 struct mp_audio {
-    void **planes; // data buffer
+    void *planes[AF_NCH]; // data buffer
     int len;       // buffer length
     int rate;      // sample rate
     int nch;       // number of channels

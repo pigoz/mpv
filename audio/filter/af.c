@@ -323,7 +323,7 @@ int af_reinit(struct af_stream *s, struct af_instance *af)
         else
             memcpy(&in, af->prev->data, sizeof(struct mp_audio));
         // Reset just in case...
-        in.planes = NULL;
+        memset(in.planes, 0, sizeof(in.planes));
         in.len = 0;
 
         rv = af->control(af, AF_CONTROL_REINIT, &in);
@@ -526,7 +526,8 @@ int af_init(struct af_stream *s)
         return -1;
 
     // Precaution in case caller is misbehaving
-    s->input.planes = s->output.planes = NULL;
+    memset(s->input.planes, 0, sizeof(s->input.planes));
+    memset(s->output.planes, 0, sizeof(s->output.planes));
     s->input.len    = s->output.len    = 0;
 
     // Figure out how fast the machine is
