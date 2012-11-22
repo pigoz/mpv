@@ -22,6 +22,8 @@
 #include <string.h>
 #include "osdep/strsep.h"
 
+#include <libavutil/mem.h>
+
 #include "af.h"
 
 // Static list of filters
@@ -97,14 +99,14 @@ void af_alloc_planes(struct mp_audio *audio, int len)
 {
     int plane_len = len / af_n_planes(audio);
     for (int i = 0; i < af_n_planes(audio); i++)
-        audio->planes[i] = malloc(plane_len);
+        audio->planes[i] = av_mallocz(plane_len);
 }
 
 void af_free_planes(struct mp_audio *audio)
 {
     for (int i = 0; i < af_n_planes(audio); i++)
         if (audio->planes[i])
-            free(audio->planes[i]);
+            av_freep(audio->planes[i]);
 }
 
 /* Find a filter in the static list of filters using it's name. This
