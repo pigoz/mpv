@@ -104,9 +104,10 @@ void af_alloc_planes(struct mp_audio *audio, int len)
 
 void af_free_planes(struct mp_audio *audio)
 {
+    if (!audio) return;
     for (int i = 0; i < af_n_planes(audio); i++)
         if (audio->planes[i])
-            av_freep(audio->planes[i]);
+            av_freep(&audio->planes[i]);
 }
 
 /* Find a filter in the static list of filters using it's name. This

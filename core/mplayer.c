@@ -1655,14 +1655,14 @@ static double written_audio_pts(struct MPContext *mpctx)
         // demuxing layer, decoder might use sh_audio->a_in_buffer for bytes
         // it has read but not decoded
         if (sh_audio->i_bps)
-            a_pts += (ds_tell_pts(d_audio) - sh_audio->a_in_buffer_len) /
+            a_pts += (ds_tell_pts(d_audio) - sh_audio->a_in_buffer->free_p) /
                      (double)sh_audio->i_bps;
     }
     // Now a_pts hopefully holds the pts for end of audio from decoder.
     // Substract data in buffers between decoder and audio out.
 
     // Decoded but not filtered
-    a_pts -= sh_audio->a_buffer_len / (double)sh_audio->o_bps;
+    a_pts -= sh_audio->a_buffer->free_p / (double)sh_audio->o_bps;
 
     // Data buffered in audio filters, measured in bytes of "missing" output
     double buffered_output = af_calc_delay(sh_audio->afilter);
@@ -2628,7 +2628,7 @@ static void seek_reset(struct MPContext *mpctx, bool reset_ao, bool reset_ac)
         if (reset_ao)
             ao_reset(mpctx->ao);
         mpctx->ao->buffer.len = mpctx->ao->buffer_playable_size;
-        mpctx->sh_audio->a_buffer_len = 0;
+        mpctx->sh_audio->a_buffer->free_p = 0;
     }
 
     reset_subtitles(mpctx);
@@ -2744,7 +2744,7 @@ static int seek(MPContext *mpctx, struct seek_params seek,
             // Clear audio from current position
             if (mpctx->sh_audio && !timeline_fallthrough) {
                 ao_reset(mpctx->ao);
-                mpctx->sh_audio->a_buffer_len = 0;
+                mpctx->sh_audio->a_buffer->free_p = 0;
             }
             return -1;
         }

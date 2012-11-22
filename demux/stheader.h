@@ -106,14 +106,10 @@ typedef struct sh_audio {
     int i_bps; // == bitrate  (compressed bytes/sec)
     // in buffers:
     int audio_in_minsize;   // initial size to allocate for a_in_buffer if any
-    char *a_in_buffer;      // input buffer used by some decoders
-    int a_in_buffer_len;
-    int a_in_buffer_size;
+    struct mp_audio *a_in_buffer;      // input buffer used by some decoders
     // decoder buffers:
     int audio_out_minsize;  // minimal output from decoder may be this much
-    char *a_buffer;         // buffer for decoder output
-    int a_buffer_len;
-    int a_buffer_size;
+    struct mp_audio *a_buffer;         // buffer for decoder output
     struct af_stream *afilter;          // the audio filter stream
     const struct ad_functions *ad_driver;
     // win32-compatible codec parameters:

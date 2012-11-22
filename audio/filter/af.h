@@ -38,11 +38,12 @@ struct af_instance;
 // Audio data chunk
 struct mp_audio {
     void *planes[AF_NCH]; // data buffer
-    int len;       // buffer length
-    int rate;      // sample rate
-    int nch;       // number of channels
-    int format;    // format
-    int bps;       // bytes per sample
+    int free_p;           // offset to free chunk of each plane
+    int len;              // total buffer length
+    int rate;             // sample rate
+    int nch;              // number of channels
+    int format;           // format
+    int bps;              // bytes per sample
 };
 
 int af_n_planes(struct mp_audio *audio);

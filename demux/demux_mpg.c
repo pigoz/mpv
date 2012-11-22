@@ -30,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "audio/decode/dec_audio.h"
+#include "audio/filter/af.h"
 #include "stream/stream.h"
 #include "demux.h"
 #include "parse_es.h"
@@ -964,7 +965,7 @@ static void demux_seek_mpg(demuxer_t *demuxer, float rel_seek_secs,
 	  int i;
           if(sh_audio && !d_audio->eof && d_video->pts && d_audio->pts){
 	    float a_pts=d_audio->pts;
-            a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer_len)/(float)sh_audio->i_bps;
+            a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer->free_p)/(float)sh_audio->i_bps;
 	    if(d_video->pts>a_pts){
 	      skip_audio_frame(sh_audio);  // sync audio
 	      continue;
