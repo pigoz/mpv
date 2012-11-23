@@ -97,7 +97,7 @@ int af_n_planes(struct mp_audio *audio)
 
 void af_alloc_planes(struct mp_audio *audio, int len)
 {
-    int plane_len = len / af_n_planes(audio);
+    int plane_len = ((double)len / af_n_planes(audio)) + 0.5;
     for (int i = 0; i < af_n_planes(audio); i++)
         audio->planes[i] = av_mallocz(plane_len);
 }
