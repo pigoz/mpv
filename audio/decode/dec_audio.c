@@ -87,7 +87,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
                 "dec_audio: Allocating %d bytes for input buffer.\n",
                 sh_audio->audio_in_minsize);
 
-        sh_audio->a_in_buffer = av_mallocz(sizeof(struct mp_audio));
+        sh_audio->a_in_buffer = talloc_zero(NULL, struct mp_audio);
         af_alloc_planes(sh_audio->a_in_buffer, sh_audio->audio_in_minsize);
         sh_audio->a_in_buffer->len = sh_audio->audio_in_minsize;
     }
@@ -99,7 +99,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
             sh_audio->audio_out_minsize, base_size,
             base_size + sh_audio->audio_out_minsize);
 
-    sh_audio->a_buffer = av_mallocz(sizeof(struct mp_audio));
+    sh_audio->a_buffer = talloc_zero(NULL, struct mp_audio);
     af_alloc_planes(sh_audio->a_buffer, base_size + sh_audio->audio_out_minsize);
     if (!sh_audio->a_buffer || !sh_audio->a_buffer->planes[0])
         abort();
@@ -301,9 +301,9 @@ void uninit_audio(sh_audio_t *sh_audio)
         sh_audio->initialized = 0;
     }
     af_free_planes(sh_audio->a_buffer);
-    av_freep(&sh_audio->a_buffer);
+    talloc_free(sh_audio->a_buffer);
     af_free_planes(sh_audio->a_in_buffer);
-    av_freep(&sh_audio->a_in_buffer);
+    talloc_free(sh_audio->a_in_buffer);
 }
 
 int init_audio_filters(sh_audio_t *sh_audio, int in_samplerate,
