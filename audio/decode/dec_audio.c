@@ -106,7 +106,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
 
     // At least 64 KiB plus rounding up to next decodable unit size
     sh_audio->a_buffer->len = base_size + sh_audio->audio_out_minsize;
-    sh_audio->a_buffer->free_p = 0;
+    sh_audio->a_buffer->free_offset = 0;
 
     if (!sh_audio->ad_driver->init(sh_audio)) {
         mp_tmsg(MSGT_DECAUDIO, MSGL_V, "ADecoder init failed :(\n");
@@ -120,7 +120,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
                                                   sh_audio->a_buffer->planes[0], 1,
                                                   sh_audio->a_buffer->len);
         if (x > 0) {
-            sh_audio->a_buffer->free_p = x;
+            sh_audio->a_buffer->free_offset = x;
             break;
         }
         if (++tries >= 5) {
@@ -373,10 +373,10 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     int old_samplerate = sh->samplerate;
     int old_channels = sh->channels;
     int old_sample_format = sh->sample_format;
-    while (sh->a_buffer->free_p < len) {
-        unsigned char *buf = (char *)*sh->a_buffer->planes + sh->a_buffer->free_p;
-        int minlen = len - sh->a_buffer->free_p;
-        int maxlen = sh->a_buffer->len - sh->a_buffer->free_p;
+    while (sh->a_buffer->free_offset < len) {
+        unsigned char *buf = (char *)*sh->a_buffer->planes + sh->a_buffer->free_offset;
+        int minlen = len - sh->a_buffer->free_offset;
+        int maxlen = sh->a_buffer->len - sh->a_buffer->free_offset;
         int ret = sh->ad_driver->decode_audio(sh, buf, minlen, maxlen);
         int format_change = sh->samplerate != old_samplerate
                             || sh->channels != old_channels
@@ -384,10 +384,10 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
         if (ret <= 0 || format_change) {
             error = format_change ? -2 : -1;
             // samples from format-changing call get discarded too
-            len = sh->a_buffer->free_p;
+            len = sh->a_buffer->free_offset;
             break;
         }
-        sh->a_buffer->free_p += ret;
+        sh->a_buffer->free_offset += ret;
     }
 
     // Filter
@@ -409,9 +409,9 @@ static int filter_n_bytes(sh_audio_t *sh, struct bstr *outbuf, int len)
     outbuf->len += filter_output->len;
 
     // remove processed data from decoder buffer:
-    sh->a_buffer->free_p -= len;
+    sh->a_buffer->free_offset -= len;
     unsigned char *p0 = sh->a_buffer->planes[0];
-    memmove(p0, p0 + len, sh->a_buffer->free_p);
+    memmove(p0, p0 + len, sh->a_buffer->free_offset);
 
     return error;
 }
@@ -483,7 +483,7 @@ void decode_audio_prepend_bytes(struct bstr *outbuf, int count, int byte)
 void resync_audio_stream(sh_audio_t *sh_audio)
 {
     if (sh_audio->a_in_buffer)
-        sh_audio->a_in_buffer->free_p = 0;      // clear audio input buffer
+        sh_audio->a_in_buffer->free_offset = 0;      // clear audio input buffer
     sh_audio->pts = MP_NOPTS_VALUE;
     if (!sh_audio->initialized)
         return;

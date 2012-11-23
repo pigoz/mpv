@@ -3311,7 +3311,7 @@ static void demux_seek_ts(demuxer_t *demuxer, float rel_seek_secs, float audio_d
 		if(sh_audio && !d_audio->eof && d_video->pts && d_audio->pts)
 		{
 			double a_pts=d_audio->pts;
-			a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer->free_p)/(double)sh_audio->i_bps;
+			a_pts+=(ds_tell_pts(d_audio)-sh_audio->a_in_buffer->free_offset)/(double)sh_audio->i_bps;
 			if(d_video->pts > a_pts)
 			{
 				skip_audio_frame(sh_audio);  // sync audio
