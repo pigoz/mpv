@@ -87,9 +87,7 @@ static int init_audio_codec(sh_audio_t *sh_audio)
                 "dec_audio: Allocating %d bytes for input buffer.\n",
                 sh_audio->audio_in_minsize);
 
-        sh_audio->a_in_buffer = talloc_zero(NULL, struct mp_audio);
-        af_alloc_planes(sh_audio->a_in_buffer, sh_audio->audio_in_minsize);
-        sh_audio->a_in_buffer->len = sh_audio->audio_in_minsize;
+        sh_audio->a_in_buffer = af_new_mp_audio(NULL, sh_audio->audio_in_minsize);
     }
 
     const int base_size = 65536;
@@ -99,14 +97,9 @@ static int init_audio_codec(sh_audio_t *sh_audio)
             sh_audio->audio_out_minsize, base_size,
             base_size + sh_audio->audio_out_minsize);
 
-    sh_audio->a_buffer = talloc_zero(NULL, struct mp_audio);
-    af_alloc_planes(sh_audio->a_buffer, base_size + sh_audio->audio_out_minsize);
-    if (!sh_audio->a_buffer || !sh_audio->a_buffer->planes[0])
-        abort();
-
     // At least 64 KiB plus rounding up to next decodable unit size
-    sh_audio->a_buffer->len = base_size + sh_audio->audio_out_minsize;
-    sh_audio->a_buffer->free_offset = 0;
+    sh_audio->a_buffer =
+        af_new_mp_audio(NULL, base_size + sh_audio->audio_out_minsize);
 
     if (!sh_audio->ad_driver->init(sh_audio)) {
         mp_tmsg(MSGT_DECAUDIO, MSGL_V, "ADecoder init failed :(\n");
@@ -300,10 +293,8 @@ void uninit_audio(sh_audio_t *sh_audio)
         sh_audio->ad_driver->uninit(sh_audio);
         sh_audio->initialized = 0;
     }
-    af_free_planes(sh_audio->a_buffer);
-    talloc_free(sh_audio->a_buffer);
-    af_free_planes(sh_audio->a_in_buffer);
-    talloc_free(sh_audio->a_in_buffer);
+    af_free_mp_audio(sh_audio->a_buffer);
+    af_free_mp_audio(sh_audio->a_in_buffer);
 }
 
 int init_audio_filters(sh_audio_t *sh_audio, int in_samplerate,

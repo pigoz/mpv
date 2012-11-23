@@ -87,7 +87,7 @@ static struct af_info *filter_list[] = {
 // CPU speed
 int *af_cpu_speed = NULL;
 
-int af_n_planes(struct mp_audio *audio)
+static int af_n_planes(struct mp_audio *audio)
 {
     if ((audio->format & AF_FORMAT_INTERLEAVING_MASK) == AF_FORMAT_PLANAR)
         return audio->nch;
@@ -97,18 +97,43 @@ int af_n_planes(struct mp_audio *audio)
 
 void af_alloc_planes(struct mp_audio *audio, int len)
 {
+    if (!audio || audio->allocated) return;
+
     int plane_len = ((double)len / af_n_planes(audio)) + 0.5;
-    for (int i = 0; i < af_n_planes(audio); i++)
+    for (int i = 0; i < af_n_planes(audio); i++) {
         audio->planes[i] = av_mallocz(plane_len);
+
+        if (!audio->planes[i]) {
+            mp_msg(MSGT_AFILTER, MSGL_FATAL, "Failed to allocate audio planes\n");
+            abort();
+        }
+    }
+
+    audio->allocated = 1;
 }
 
 void af_free_planes(struct mp_audio *audio)
 {
-    if (!audio) return;
+    if (!audio || !audio->allocated) return;
     for (int i = 0; i < af_n_planes(audio); i++)
         if (audio->planes[i])
             av_freep(&audio->planes[i]);
 }
+
+struct mp_audio *af_new_mp_audio(void *ctx, int len)
+{
+    struct mp_audio *rv = talloc_zero(ctx, struct mp_audio);
+    rv->len = len;
+    af_alloc_planes(rv, len);
+    return rv;
+};
+
+void af_free_mp_audio(struct mp_audio *audio)
+{
+    af_free_planes(audio);
+    talloc_free(audio);
+}
+
 
 /* Find a filter in the static list of filters using it's name. This
    function is used internally */

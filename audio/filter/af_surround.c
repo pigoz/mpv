@@ -149,8 +149,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 // Deallocate memory
 static void uninit(struct af_instance* af)
 {
-  af_free_planes(af->data);
-  free(af->data);
+  af_free_mp_audio(af->data);
   free(af->setup);
 }
 

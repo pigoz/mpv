@@ -39,6 +39,7 @@ struct af_instance;
 struct mp_audio {
     void *planes[AF_NCH]; // data buffer
     int free_offset;      // offset to free chunk of each plane
+    int allocated;        // whether the plane buffers are allocated
     int len;              // total buffer length (sum of length of all planes)
     int rate;             // sample rate
     int nch;              // number of channels
@@ -46,9 +47,8 @@ struct mp_audio {
     int bps;              // bytes per sample
 };
 
-int af_n_planes(struct mp_audio *audio);
-void af_alloc_planes(struct mp_audio *audio, int len);
-void af_free_planes(struct mp_audio *audio);
+struct mp_audio *af_new_mp_audio(void *ctx, int len);
+void af_free_mp_audio(struct mp_audio *);
 
 // Flags used for defining the behavior of an audio filter
 #define AF_FLAGS_REENTRANT      0x00000000
