@@ -22,8 +22,6 @@
 #include <string.h>
 #include "osdep/strsep.h"
 
-#include <libavutil/mem.h>
-
 #include "af.h"
 
 // Static list of filters
@@ -86,54 +84,6 @@ static struct af_info *filter_list[] = {
 
 // CPU speed
 int *af_cpu_speed = NULL;
-
-static int af_n_planes(struct mp_audio *audio)
-{
-    if ((audio->format & AF_FORMAT_INTERLEAVING_MASK) == AF_FORMAT_PLANAR)
-        return audio->nch;
-    else
-        return 1;
-}
-
-void af_alloc_planes(struct mp_audio *audio, int len)
-{
-    if (!audio || audio->allocated) return;
-
-    int plane_len = ((double)len / af_n_planes(audio)) + 0.5;
-    for (int i = 0; i < af_n_planes(audio); i++) {
-        audio->planes[i] = av_mallocz(plane_len);
-
-        if (!audio->planes[i]) {
-            mp_msg(MSGT_AFILTER, MSGL_FATAL, "Failed to allocate audio planes\n");
-            abort();
-        }
-    }
-
-    audio->allocated = 1;
-}
-
-void af_free_planes(struct mp_audio *audio)
-{
-    if (!audio || !audio->allocated) return;
-    for (int i = 0; i < af_n_planes(audio); i++)
-        if (audio->planes[i])
-            av_freep(&audio->planes[i]);
-}
-
-struct mp_audio *af_new_mp_audio(void *ctx, int len)
-{
-    struct mp_audio *rv = talloc_zero(ctx, struct mp_audio);
-    rv->len = len;
-    af_alloc_planes(rv, len);
-    return rv;
-};
-
-void af_free_mp_audio(struct mp_audio *audio)
-{
-    af_free_planes(audio);
-    talloc_free(audio);
-}
-
 
 /* Find a filter in the static list of filters using it's name. This
    function is used internally */
@@ -739,18 +689,11 @@ int af_resize_local_buffer(struct af_instance *af, struct mp_audio *data)
            "old len = %i, new len = %i\n", af->info->name, af->data->len, len);
 
     // If there is a buffer free it
-    af_free_planes(af->data);
+    mp_audio_free_planes(af->data);
 
     // Create new buffer and check that it is OK
-    af_alloc_planes(af->data, len);
+    mp_audio_alloc_planes(af->data, len);
 
-    for (int i =  0; i < af_n_planes(af->data); i++)
-        if (!af->data->planes[i]) {
-            mp_msg(MSGT_AFILTER, MSGL_FATAL, "[libaf] Could not allocate"
-                                             " memory\n");
-            return AF_ERROR;
-        }
-    af->data->len = len;
     return AF_OK;
 }
 

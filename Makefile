@@ -123,6 +123,7 @@ SOURCES = talloc.c \
           audio/fmt-conversion.c \
           audio/format.c \
           audio/mixer.c \
+          audio/mp_audio.c \
           audio/reorder_ch.c \
           audio/decode/ad.c \
           audio/decode/ad_dvdpcm.c \

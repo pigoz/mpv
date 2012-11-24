@@ -536,7 +536,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
   af_scaletempo_t* s = af->setup;
-  af_free_mp_audio(af->data);
+  mp_audio_free(af->data);
   free(s->buf_queue);
   free(s->buf_overlap);
   free(s->buf_pre_corr);

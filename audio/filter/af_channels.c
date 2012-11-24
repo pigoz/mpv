@@ -250,7 +250,7 @@ static int control(struct af_instance* af, int cmd, void* arg)
 static void uninit(struct af_instance* af)
 {
   free(af->setup);
-  af_free_mp_audio(af->data);
+  mp_audio_free(af->data);
 }
 
 // Filter data through filter

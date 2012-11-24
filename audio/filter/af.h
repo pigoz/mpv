@@ -25,6 +25,7 @@
 
 #include "core/options.h"
 #include "audio/format.h"
+#include "audio/mp_audio.h"
 #include "control.h"
 #include "core/mp_msg.h"
 
@@ -32,23 +33,8 @@ struct af_instance;
 
 // Number of channels
 #ifndef AF_NCH
-#define AF_NCH 8
+#define AF_NCH MP_NCH
 #endif
-
-// Audio data chunk
-struct mp_audio {
-    void *planes[AF_NCH]; // data buffer
-    int free_offset;      // offset to free chunk of each plane
-    int allocated;        // whether the plane buffers are allocated
-    int len;              // total buffer length (sum of length of all planes)
-    int rate;             // sample rate
-    int nch;              // number of channels
-    int format;           // format
-    int bps;              // bytes per sample
-};
-
-struct mp_audio *af_new_mp_audio(void *ctx, int len);
-void af_free_mp_audio(struct mp_audio *);
 
 // Flags used for defining the behavior of an audio filter
 #define AF_FLAGS_REENTRANT      0x00000000
