@@ -98,6 +98,10 @@ bool bstr_eatstart(struct bstr *s, struct bstr prefix);
 
 bool bstr_case_startswith(struct bstr s, struct bstr prefix);
 bool bstr_case_endswith(struct bstr s, struct bstr suffix);
+
+// Merges two strings together by using one character from each list at a time.
+// i.e.: zip("abc", "def") => "adbecf"
+struct bstr bstr_zip(void *talloc_ctx, struct bstr str1, struct bstr str2);
 struct bstr bstr_strip_ext(struct bstr str);
 struct bstr bstr_get_ext(struct bstr s);
 

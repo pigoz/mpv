@@ -290,3 +290,23 @@ struct bstr bstr_get_ext(struct bstr s)
         return (struct bstr){NULL, 0};
     return bstr_splice(s, dotpos + 1, s.len);
 }
+
+struct bstr bstr_zip(void *talloc_ctx, struct bstr str1, struct bstr str2)
+{
+    struct bstr r = { NULL, str1.len + str2.len};
+    r.start = talloc_array(talloc_ctx, unsigned char, r.len);
+
+    for (int i = 0, j = 0; i < str1.len || j < str2.len; ) {
+        if (i < str1.len) {
+            r.start[i+j] = str1.start[i];
+            i++;
+        }
+
+        if (j < str2.len) {
+            r.start[i+j] = str2.start[j];
+            j++;
+        }
+    }
+
+    return r;
+}
