@@ -118,27 +118,61 @@ int convert_key(unsigned key, unsigned charcode)
 /**
  * Checks at runtime that OSX version is the same or newer than the one
  * provided as input.
+ * Currently reads SystemVersion.plist file since Gestalt was deprecated.
+ * This is supposedly the current way supported by Apple engineers. More info:
+ * http://stackoverflow.com/a/11072974/499456
  */
 int is_osx_version_at_least(int majorv, int minorv, int bugfixv)
 {
-    OSErr err;
-    SInt32 major, minor, bugfix;
-    if ((err = Gestalt(gestaltSystemVersionMajor,  &major)) != noErr)
-        goto fail;
-    if ((err = Gestalt(gestaltSystemVersionMinor,  &minor)) != noErr)
-        goto fail;
-    if ((err = Gestalt(gestaltSystemVersionBugFix, &bugfix)) != noErr)
-        goto fail;
+    SInt32 err;
+    CFURLRef url = CFURLCreateWithFileSystemPath(
+            kCFAllocatorDefault,
+            CFSTR("/System/Library/CoreServices/SystemVersion.plist"),
+            kCFURLPOSIXPathStyle,
+            false);
+
+    CFDataRef xmldata;
+    CFURLCreateDataAndPropertiesFromResource(
+            kCFAllocatorDefault, url, &xmldata, NULL, NULL, &err);
+
+    if (err) {
+        mp_msg(MSGT_VO, MSGL_FATAL, "[osx] Failed to load SystemVersion.plist. "
+            "Please contact the developers. Error code: %d\n", err);
+        abort();
+    }
+
+    CFPropertyListRef plist =
+        CFPropertyListCreateWithData(kCFAllocatorDefault,
+                                     xmldata,
+                                     kCFPropertyListImmutable,
+                                     NULL,
+                                     NULL);
+    assert(plist != NULL);
+
+    CFStringRef version =
+        (CFStringRef) CFDictionaryGetValue(plist, CFSTR("ProductVersion"));
+    assert(version != NULL);
+
+    CFArrayRef components =
+        CFStringCreateArrayBySeparatingStrings(kCFAllocatorDefault,
+                                               version,
+                                               CFSTR("."));
+    assert(CFArrayGetCount(components) == 3);
+
+    SInt32 major  = CFStringGetIntValue(CFArrayGetValueAtIndex(components, 0));
+    SInt32 minor  = CFStringGetIntValue(CFArrayGetValueAtIndex(components, 1));
+    SInt32 bugfix = CFStringGetIntValue(CFArrayGetValueAtIndex(components, 2));
+
+    CFRelease(components);
+    CFRelease(version);
+    CFRelease(plist);
+    CFRelease(xmldata);
+    CFRelease(url);
 
     if(major > majorv ||
         (major == majorv && (minor > minorv ||
             (minor == minorv && bugfix >= bugfixv))))
-      return 1;
+        return 1;
     else
-      return 0;
-fail:
-    // There's no reason the Gestalt system call should fail on OSX.
-    mp_msg(MSGT_VO, MSGL_FATAL, "[osx] Failed to get system version number. "
-        "Please contact the developers. Error code: %ld\n", (long)err);
-    return 0;
+        return 0;
 }
