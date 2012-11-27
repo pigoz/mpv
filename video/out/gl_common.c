@@ -897,12 +897,22 @@ void glUploadTex(GL *gl, GLenum target, GLenum format, GLenum type,
     // this is not always correct, but should work for MPlayer
     glAdjustAlignment(gl, stride);
     gl->PixelStorei(GL_UNPACK_ROW_LENGTH, stride / glFmt2bpp(format, type));
+#ifdef __APPLE__
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_STORAGE_HINT_APPLE,
+            GL_STORAGE_SHARED_APPLE);
+    glCheckError(gl, "texture storage failed");
+    glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_TRUE);
+    glCheckError(gl, "client storage failed");
+#endif
     for (; y + slice <= y_max; y += slice) {
         gl->TexSubImage2D(target, 0, x, y, w, slice, format, type, data);
         data += stride * slice;
     }
     if (y < y_max)
         gl->TexSubImage2D(target, 0, x, y, w, y_max - y, format, type, data);
+#ifdef __APPLE__
+    glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, GL_FALSE);
+#endif
 }
 
 // Like glUploadTex, but upload a byte array with all elements set to val.
