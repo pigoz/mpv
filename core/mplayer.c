@@ -1038,6 +1038,19 @@ void init_vo_spudec(struct MPContext *mpctx)
     }
 }
 
+static int get_cache_percent(struct MPContext *mpctx)
+{
+    if (mpctx->stream) {
+        int64_t size = -1;
+        int64_t fill = -1;
+        stream_control(mpctx->stream, STREAM_CTRL_GET_CACHE_SIZE, &size);
+        stream_control(mpctx->stream, STREAM_CTRL_GET_CACHE_FILL, &fill);
+        if (size > 0 && fill >= 0)
+            return fill / (size / 100);
+    }
+    return -1;
+}
+
 /**
  * \brief append a formatted string
  * \param buf buffer to print into
@@ -1181,11 +1194,9 @@ static void print_status(struct MPContext *mpctx)
             saddf(line, width, " D: %d", drop_frame_cnt);
     }
 
-#ifdef CONFIG_STREAM_CACHE
-    // cache stats
-    if (mpctx->stream->cached)
-        saddf(line, width, " C: %d%%", cache_fill_status(mpctx->stream));
-#endif
+    int cache = get_cache_percent(mpctx);
+    if (cache >= 0)
+        saddf(line, width, " C: %d%%", cache);
 
     // end
     write_status_line(mpctx, line);
@@ -3301,7 +3312,7 @@ static void run_playloop(struct MPContext *mpctx)
 
 #ifdef CONFIG_STREAM_CACHE
     // The cache status is part of the status line. Possibly update it.
-    if (mpctx->paused && mpctx->stream && mpctx->stream->cached)
+    if (mpctx->paused && get_cache_percent(mpctx) >= 0)
         print_status(mpctx);
 #endif
 
