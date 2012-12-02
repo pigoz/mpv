@@ -3346,11 +3346,9 @@ static void run_playloop(struct MPContext *mpctx)
 
     update_osd_msg(mpctx);
 
-#ifdef CONFIG_STREAM_CACHE
     // The cache status is part of the status line. Possibly update it.
     if (mpctx->paused && get_cache_percent(mpctx) >= 0)
         print_status(mpctx);
-#endif
 
     if (!video_left && (!mpctx->paused || was_restart)) {
         double a_pos = 0;
