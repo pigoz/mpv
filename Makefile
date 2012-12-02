@@ -88,7 +88,9 @@ SOURCES-$(ALSA)                 += audio/out/ao_alsa.c
 SOURCES-$(APPLE_IR)             += core/input/appleir.c
 SOURCES-$(APPLE_REMOTE)         += core/input/ar.c
 SOURCES-$(CACA)                 += video/out/vo_caca.c
-SOURCES-$(COREAUDIO)            += audio/out/ao_coreaudio.c
+SOURCES-$(COREAUDIO)            += audio/out/ao_coreaudio.c \
+                                   audio/out/coreaudio/format.c \
+                                   audio/out/ao_coreaudio_legacy.c
 SOURCES-$(COREVIDEO)            += video/out/vo_corevideo.m
 SOURCES-$(DIRECT3D)             += video/out/vo_direct3d.c \
                                    video/out/w32_common.c

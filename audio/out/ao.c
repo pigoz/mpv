@@ -34,6 +34,7 @@ char *ao_subdevice = NULL;
 
 extern const struct ao_driver audio_out_oss;
 extern const struct ao_driver audio_out_coreaudio;
+extern const struct ao_driver audio_out_coreaudio_legacy;
 extern const struct ao_driver audio_out_rsound;
 extern const struct ao_driver audio_out_pulse;
 extern const struct ao_driver audio_out_jack;
@@ -50,6 +51,7 @@ static const struct ao_driver * const audio_out_drivers[] = {
 // native:
 #ifdef CONFIG_COREAUDIO
     &audio_out_coreaudio,
+    &audio_out_coreaudio_legacy,
 #endif
 #ifdef CONFIG_PULSE
     &audio_out_pulse,
