@@ -48,8 +48,14 @@
 
 #include "osdep/io.h"
 
+#ifdef CONFIG_MACOSX_BUNDLE
+#include "osdep/macosx_bundle.h"
+#endif
+
 char *get_path(const char *filename)
 {
+    printf("%s\n", get_bundled_path("fonts.conf"));
+
     char *homedir;
     char *buff;
 #ifdef __MINGW32__
@@ -61,14 +67,6 @@ char *get_path(const char *filename)
     char exedir[260];
 #endif
     int len;
-#ifdef CONFIG_MACOSX_BUNDLE
-    struct stat dummy;
-    CFIndex maxlen = 256;
-    CFURLRef res_url_ref = NULL;
-    CFURLRef bdl_url_ref = NULL;
-    char *res_url_path = NULL;
-    char *bdl_url_path = NULL;
-#endif
 
     if ((homedir = getenv("MPV_HOME")) != NULL)
         config_dir = "";
@@ -101,47 +99,6 @@ char *get_path(const char *filename)
         sprintf(buff, "%s%s/%s", homedir, config_dir, filename);
     }
 
-#ifdef CONFIG_MACOSX_BUNDLE
-    if (stat(buff, &dummy)) {
-
-        res_url_ref = CFBundleCopyResourcesDirectoryURL(CFBundleGetMainBundle());
-        bdl_url_ref = CFBundleCopyBundleURL(CFBundleGetMainBundle());
-
-        if (res_url_ref && bdl_url_ref) {
-
-            res_url_path = malloc(maxlen);
-            bdl_url_path = malloc(maxlen);
-
-            while (!CFURLGetFileSystemRepresentation(res_url_ref, true,
-                                                     res_url_path, maxlen)) {
-                maxlen *= 2;
-                res_url_path = realloc(res_url_path, maxlen);
-            }
-            CFRelease(res_url_ref);
-
-            while (!CFURLGetFileSystemRepresentation(bdl_url_ref, true,
-                                                     bdl_url_path, maxlen)) {
-                maxlen *= 2;
-                bdl_url_path = realloc(bdl_url_path, maxlen);
-            }
-            CFRelease(bdl_url_ref);
-
-            if (strcmp(res_url_path, bdl_url_path) == 0)
-                res_url_path = NULL;
-        }
-
-        if (res_url_path && filename) {
-            if ((strlen(filename) + strlen(res_url_path) + 2) > maxlen)
-                maxlen = strlen(filename) + strlen(res_url_path) + 2;
-            free(buff);
-            buff = malloc(maxlen);
-            strcpy(buff, res_url_path);
-
-            strcat(buff, "/");
-            strcat(buff, filename);
-        }
-    }
-#endif
     mp_msg(MSGT_GLOBAL, MSGL_V, "get_path('%s') -> '%s'\n", filename, buff);
     return buff;
 }
