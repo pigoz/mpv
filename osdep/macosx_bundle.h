@@ -3,7 +3,7 @@
 
 /* Returns absolute path of a resource file in a Mac OS X application bundle.
  */
-const char *get_bundled_path(const char *filename);
+char *get_bundled_path(const char *filename);
 
 #endif /* MPV_MACOSX_BUNDLE */
 

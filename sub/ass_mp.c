@@ -254,40 +254,14 @@ void mp_ass_configure(ASS_Renderer *priv, struct MPOpts *opts,
     ass_set_line_spacing(priv, set_line_spacing);
 }
 
-#define DEF_OSX_FC_CONFIG \
-"<?xml version=\"1.0\"?>\n" \
-"<!DOCTYPE fontconfig SYSTEM \"fonts.dtd\">\n" \
-"<fontconfig>\n" \
-"    <dir>/System/Library/Fonts</dir>\n" \
-"    <dir>/Library/Fonts</dir>\n" \
-"    <dir>~/Library/Fonts</dir>\n" \
-"    <dir>/Network/Library/Fonts</dir>\n" \
-"    <cachedir>~/.mpv/fontconfig</cachedir>\n" \
-"</fontconfig>"
-
 void mp_ass_configure_fonts(ASS_Renderer *priv, struct osd_style_opts *opts)
 {
     char *default_font = get_path("subfont.ttf");
-    char *config       = get_path("fonts.conf");
+    char *config       = mp_find_config_file("fonts.conf");
 
     if (!mp_path_exists(default_font)) {
         free(default_font);
         default_font = NULL;
-    }
-
-    if (!mp_path_exists(config)) {
-#ifdef __APPLE__
-        int c_fd;
-        if ((c_fd = open(config, O_CREAT | O_EXCL | O_WRONLY, 0666)) != -1) {
-            mp_tmsg(MSGT_ASS, MSGL_INFO, "[ass] Creating fontconfig"
-                                         " config file: %s\n", config);
-            write(c_fd, DEF_OSX_FC_CONFIG, sizeof(DEF_OSX_FC_CONFIG) - 1);
-            close(c_fd);
-        }
-#else
-        free(config);
-        config = NULL;
-#endif
     }
 
     ass_set_fonts(priv, default_font, opts->font, 1, config, 1);

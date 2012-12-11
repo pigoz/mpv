@@ -33,29 +33,55 @@
 #include "config.h"
 #include "core/mp_msg.h"
 #include "core/path.h"
+#include "talloc.h"
+#include "osdep/io.h"
 
-#ifdef CONFIG_MACOSX_BUNDLE
-#include <CoreFoundation/CoreFoundation.h>
-#include <unistd.h>
-#elif defined(__MINGW32__)
+#if defined(__MINGW32__)
 #include <windows.h>
 #elif defined(__CYGWIN__)
 #include <windows.h>
 #include <sys/cygwin.h>
 #endif
 
-#include "talloc.h"
-
-#include "osdep/io.h"
-
 #ifdef CONFIG_MACOSX_BUNDLE
 #include "osdep/macosx_bundle.h"
 #endif
 
+static char *get_global_path(const char *filename)
+{
+    char *path;
+    if(asprintf(&path, "%s/%s", MPLAYER_CONFDIR, filename) < 0)
+        return NULL;
+    return path;
+}
+
+typedef char *(*lookup_fun)(const char *);
+static const lookup_fun config_lookup_functions[] = {
+    get_path,
+#ifdef CONFIG_MACOSX_BUNDLE
+    get_bundled_path,
+#endif
+    get_global_path,
+    NULL
+};
+
+char *mp_find_config_file(const char *filename)
+{
+    for (int i = 0; config_lookup_functions[i] != NULL; i++) {
+        char *path = config_lookup_functions[i](filename);
+        if (!path) continue;
+
+        if (mp_path_exists(path)) {
+            return path;
+        } else {
+            free(path);
+        }
+    }
+    return NULL;
+}
+
 char *get_path(const char *filename)
 {
-    printf("%s\n", get_bundled_path("fonts.conf"));
-
     char *homedir;
     char *buff;
 #ifdef __MINGW32__

@@ -24,6 +24,10 @@
 #include <stdbool.h>
 #include "core/bstr.h"
 
+
+// search for the given file in several paths known to mpv
+char *mp_find_config_file(const char *filename);
+
 char *get_path(const char *filename);
 
 // Return pointer to filename part of path
