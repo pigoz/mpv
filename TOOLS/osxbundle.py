@@ -47,6 +47,11 @@ def copy_bundle():
         os.path.join('TOOLS', 'osxbundle', bundle_name()),
         bundle_name())
 
+def copy_resources():
+    shutil.copyfile(
+        os.path.join('etc', 'fonts.conf.osx'),
+        os.path.join(bundle_name(), 'Contents', 'Resources', 'fonts.conf'))
+
 def copy_binary():
     shutil.copy(binary_name, target_binary())
 
@@ -82,6 +87,7 @@ version = sh("TOOLS/osxbundle/version.sh").strip()
 print("Creating Mac OS X application bundle (version: %s)..." % version)
 
 copy_bundle()
+copy_resources()
 copy_binary()
 apply_plist_template(target_plist(), version)
 cp_dylibs(sys.argv[1], os.path.join(target_directory(), "lib"))

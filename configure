@@ -885,6 +885,7 @@ _getch=getch2.c
 if darwin; then
   extra_cflags="-mdynamic-no-pic $extra_cflags"
   _timer=timer-darwin.c
+  _fontsconf=fonts.conf.osx
 fi
 
 if win32 ; then
@@ -3130,6 +3131,7 @@ EXTRALIBS          = $extra_ldflags $_ld_static $_ld_lm $extra_libs $libs_mplaye
 
 GETCH = $_getch
 TIMER = $_timer
+FONTSCONF = $_fontsconf
 RST2MAN = $_rst2man
 BUILD_MAN = $_build_man
 

@@ -291,6 +291,8 @@ ifeq ($(BUILD_MAN),yes)
     ALL_TARGETS += DOCS/man/en/mpv.1
 endif
 
+INSTALL_CONF     = install-mpv-fonts-conf
+
 DIRS =  . \
         audio \
         audio/decode \
@@ -408,10 +410,10 @@ DOCS/man/en/mpv.1: DOCS/man/en/af.rst \
 
 ###### installation / clean / generic rules #######
 
-install:               $(INSTALL_BIN)       $(INSTALL_MAN)
-install-no-man:        $(INSTALL_BIN)
-install-strip:         $(INSTALL_BIN_STRIP) $(INSTALL_MAN)
-install-strip-no-man:  $(INSTALL_BIN_STRIP)
+install:               $(INSTALL_BIN) $(INSTALL_CONF) $(INSTALL_MAN)
+install-no-man:        $(INSTALL_BIN) $(INSTALL_CONF)
+install-strip:         $(INSTALL_BIN_STRIP) $(INSTALL_CONF) $(INSTALL_MAN)
+install-strip-no-man:  $(INSTALL_BIN_STRIP) $(INSTALL_CONF)
 
 install-dirs:
 	if test ! -d $(BINDIR) ; then $(INSTALL) -d $(BINDIR) ; fi
@@ -427,6 +429,12 @@ install-mpv-man:  install-mpv-man-en
 install-mpv-man-en: DOCS/man/en/mpv.1
 	if test ! -d $(MANDIR)/man1 ; then $(INSTALL) -d $(MANDIR)/man1 ; fi
 	$(INSTALL) -m 644 DOCS/man/en/mpv.1 $(MANDIR)/man1/
+
+install-mpv-fonts-conf:
+	if [ ! -z "$(FONTSCONF)" ]; then \
+		mkdir -p $(CONFDIR) ; \
+		$(INSTALL) -m 644 etc/$(FONTSCONF) $(CONFDIR)/fonts.conf ; \
+	fi
 
 uninstall:
 	$(RM) $(BINDIR)/mpv$(EXESUF)
