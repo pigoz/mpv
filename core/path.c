@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,15 +50,13 @@
 
 static char *get_global_path(const char *filename)
 {
-    char *path;
-    if(asprintf(&path, "%s/%s", MPLAYER_CONFDIR, filename) < 0)
-        return NULL;
-    return path;
+    assert(filename);
+    return talloc_asprintf(NULL, "%s/%s", MPLAYER_CONFDIR, filename);
 }
 
 typedef char *(*lookup_fun)(const char *);
 static const lookup_fun config_lookup_functions[] = {
-    get_path,
+    mp_get_path,
 #ifdef CONFIG_MACOSX_BUNDLE
     get_bundled_path,
 #endif
@@ -74,13 +73,13 @@ char *mp_find_config_file(const char *filename)
         if (mp_path_exists(path)) {
             return path;
         } else {
-            free(path);
+            talloc_free(path);
         }
     }
     return NULL;
 }
 
-char *get_path(const char *filename)
+char *mp_get_path(const char *filename)
 {
     char *homedir, *buff = NULL;
 #ifdef __MINGW32__
@@ -111,9 +110,9 @@ char *get_path(const char *filename)
     }
 
     if (filename) {
-        asprintf(&buff, "%s%s/%s", homedir, config_dir, filename);
+        buff = talloc_asprintf(NULL, "%s%s/%s", homedir, config_dir, filename);
     } else {
-        asprintf(&buff, "%s%s", homedir, config_dir);
+        buff = talloc_asprintf(NULL, "%s%s", homedir, config_dir);
     }
 
     mp_msg(MSGT_GLOBAL, MSGL_V, "get_path('%s') -> '%s'\n", filename, buff);

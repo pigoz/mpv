@@ -1794,7 +1794,7 @@ struct input_ctx *mp_input_init(struct input_conf *input_conf)
 
     char *file;
     char *config_file = input_conf->config_file;
-    file = config_file[0] != '/' ? get_path(config_file) : config_file;
+    file = config_file[0] != '/' ? mp_get_path(config_file) : config_file;
     if (!file)
         return ictx;
 
@@ -1811,7 +1811,7 @@ struct input_ctx *mp_input_init(struct input_conf *input_conf)
     } else {
         // free file if it was allocated by get_path()
         if (file != config_file)
-            free(file);
+            talloc_free(file);
     }
 
 #ifdef CONFIG_JOYSTICK
