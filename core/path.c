@@ -82,8 +82,7 @@ char *mp_find_config_file(const char *filename)
 
 char *get_path(const char *filename)
 {
-    char *homedir;
-    char *buff;
+    char *homedir, *buff = NULL;
 #ifdef __MINGW32__
     static char *config_dir = "/mpv";
 #else
@@ -92,16 +91,13 @@ char *get_path(const char *filename)
 #if defined(__MINGW32__) || defined(__CYGWIN__)
     char exedir[260];
 #endif
-    int len;
-
-    if ((homedir = getenv("MPV_HOME")) != NULL)
+    if ((homedir = getenv("MPV_HOME")) != NULL) {
         config_dir = "";
-    else if ((homedir = getenv("HOME")) == NULL)
+    } else if ((homedir = getenv("HOME")) == NULL) {
 #if defined(__MINGW32__) || defined(__CYGWIN__)
     /* Hack to get fonts etc. loaded outside of Cygwin environment. */
-    {
         int i, imax = 0;
-        len = (int)GetModuleFileNameA(NULL, exedir, 260);
+        int len = (int)GetModuleFileNameA(NULL, exedir, 260);
         for (i = 0; i < len; i++)
             if (exedir[i] == '\\') {
                 exedir[i] = '/';
@@ -109,20 +105,15 @@ char *get_path(const char *filename)
             }
         exedir[imax] = '\0';
         homedir = exedir;
-    }
 #else
         return NULL;
 #endif
-    len = strlen(homedir) + strlen(config_dir) + 1;
-    if (filename == NULL) {
-        if ((buff = malloc(len)) == NULL)
-            return NULL;
-        sprintf(buff, "%s%s", homedir, config_dir);
+    }
+
+    if (filename) {
+        asprintf(&buff, "%s%s/%s", homedir, config_dir, filename);
     } else {
-        len += strlen(filename) + 1;
-        if ((buff = malloc(len)) == NULL)
-            return NULL;
-        sprintf(buff, "%s%s/%s", homedir, config_dir, filename);
+        asprintf(&buff, "%s%s", homedir, config_dir);
     }
 
     mp_msg(MSGT_GLOBAL, MSGL_V, "get_path('%s') -> '%s'\n", filename, buff);

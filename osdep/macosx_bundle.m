@@ -1,6 +1,5 @@
 #include "osdep/macosx_bundle.h"
 
-#include "talloc/talloc.h"
 #import <Foundation/Foundation.h>
 
 char *get_bundled_path(const char *file)
