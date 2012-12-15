@@ -48,11 +48,6 @@
 #include "osdep/macosx_bundle.h"
 #endif
 
-static char *get_global_path(const char *filename)
-{
-    assert(filename);
-    return mp_path_join(NULL, bstr0(MPLAYER_CONFDIR), bstr0(filename));
-}
 
 typedef char *(*lookup_fun)(const char *);
 static const lookup_fun config_lookup_functions[] = {
@@ -60,7 +55,7 @@ static const lookup_fun config_lookup_functions[] = {
 #ifdef CONFIG_MACOSX_BUNDLE
     get_bundled_path,
 #endif
-    get_global_path,
+    mp_find_global_config_file,
     NULL
 };
 
@@ -118,6 +113,15 @@ char *mp_find_user_config_file(const char *filename)
 
     mp_msg(MSGT_GLOBAL, MSGL_V, "get_path('%s') -> '%s'\n", filename, buff);
     return buff;
+}
+
+char *mp_find_global_config_file(const char *filename)
+{
+    if (filename) {
+        return mp_path_join(NULL, bstr0(MPLAYER_CONFDIR), bstr0(filename));
+    } else {
+        return talloc_strdup(NULL, MPLAYER_CONFDIR);
+    }
 }
 
 char *mp_basename(const char *path)
