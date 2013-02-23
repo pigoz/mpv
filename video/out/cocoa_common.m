@@ -408,6 +408,7 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
 
     create_menu();
 
+    [s->window setRestorable:NO];
     [s->window setContentView:glView];
     [glView release];
     [s->window setAcceptsMouseMovedEvents:YES];
