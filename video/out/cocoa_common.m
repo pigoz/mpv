@@ -39,6 +39,8 @@
 #include "osx_common.h"
 #include "core/mp_msg.h"
 
+#include "osdep/macosx_application.h"
+
 #ifndef NSOpenGLPFAOpenGLProfile
 #define NSOpenGLPFAOpenGLProfile 99
 #endif
@@ -99,7 +101,6 @@ static bool RightAltPressed(NSEvent *event)
 @end
 
 struct vo_cocoa_state {
-    NSAutoreleasePool *pool;
     GLMPlayerWindow *window;
     NSOpenGLContext *glContext;
     NSOpenGLPixelFormat *pixelFormat;
@@ -134,13 +135,10 @@ struct vo_cocoa_state {
 
 static int _instances = 0;
 
-static void create_menu(void);
-
 static struct vo_cocoa_state *vo_cocoa_init_state(struct vo *vo)
 {
     struct vo_cocoa_state *s = talloc_ptrtype(vo, s);
     *s = (struct vo_cocoa_state){
-        .pool = [[NSAutoreleasePool alloc] init],
         .did_resize = NO,
         .current_video_size = {0,0},
         .previous_video_size = {0,0},
@@ -209,10 +207,6 @@ int vo_cocoa_init(struct vo *vo)
     vo->cocoa = vo_cocoa_init_state(vo);
     vo->wakeup_period = 0.02;
     _instances++;
-
-    NSApplicationLoad();
-    NSApp = [NSApplication sharedApplication];
-    [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
     disable_power_management(vo);
 
     return 1;
@@ -229,8 +223,6 @@ void vo_cocoa_uninit(struct vo *vo)
     s->window = nil;
     [s->glContext release];
     s->glContext = nil;
-    [s->pool release];
-    s->pool = nil;
 
     _instances--;
 }
@@ -399,8 +391,13 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
         [[NSOpenGLContext alloc] initWithFormat:s->pixelFormat
                                    shareContext:nil];
 
-    create_menu();
+    cocoa_register_menu_item_action(MPM_H_SIZE,   @selector(halfSize));
+    cocoa_register_menu_item_action(MPM_N_SIZE,   @selector(normalSize));
+    cocoa_register_menu_item_action(MPM_D_SIZE,   @selector(doubleSize));
+    cocoa_register_menu_item_action(MPM_MINIMIZE, @selector(performMiniaturize:));
+    cocoa_register_menu_item_action(MPM_ZOOM,     @selector(performZoom:));
 
+    [s->window setRestorable:NO];
     [s->window setContentView:glView];
     [glView release];
     [s->window setAcceptsMouseMovedEvents:YES];
@@ -408,11 +405,11 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
     [s->glContext makeCurrentContext];
     [s->window setVideoOutput:vo];
 
-    [NSApp setDelegate:s->window];
     [s->window setDelegate:s->window];
     [s->window setContentSize:s->current_video_size];
     [s->window setContentAspectRatio:s->current_video_size];
     [s->window setFrameOrigin:NSMakePoint(vo->dx, vo->dy)];
+    [s->window makeMainWindow];
 
     if (flags & VOFLAG_HIDDEN) {
         [s->window orderOut:nil];
@@ -510,31 +507,13 @@ int vo_cocoa_check_events(struct vo *vo)
         s->cursor_timer = ms_time;
     }
 
-    int result = 0;
-
-    for (;;) {
-        NSEvent* event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:nil
-                       inMode:NSEventTrackingRunLoopMode dequeue:YES];
-        if (event == nil)
-            break;
-        [NSApp sendEvent:event];
-
-        if (s->did_resize) {
-            s->did_resize = NO;
-            resize_window(vo);
-            result |= VO_EVENT_RESIZE;
-        }
-        // Without SDL's bootstrap code (include SDL.h in mplayer.c),
-        // on Leopard, we have trouble to get the play window automatically focused
-        // when the app is actived. The Following code fix this problem.
-        if ([event type] == NSAppKitDefined
-                && [event subtype] == NSApplicationActivatedEventType) {
-            [s->window makeMainWindow];
-            [s->window makeKeyAndOrderFront:nil];
-        }
+    if (s->did_resize) {
+        s->did_resize = NO;
+        resize_window(vo);
+        return VO_EVENT_RESIZE;
     }
 
-    return result;
+    return 0;
 }
 
 void vo_cocoa_fullscreen(struct vo *vo)
@@ -576,53 +555,6 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
     }
 
     return 8;
-}
-
-static NSMenuItem *new_menu_item(NSMenu *parent_menu, NSString *title,
-                                 SEL action, NSString *key_equivalent)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:action
-                                         keyEquivalent:key_equivalent];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
-                                      NSString *title)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:nil
-                                         keyEquivalent:@""];
-    [new_item setSubmenu:child_menu];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-void create_menu()
-{
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
-    NSMenu *main_menu, *m_menu, *w_menu;
-    NSMenuItem *app_menu_item;
-
-    main_menu = [[NSMenu new] autorelease];
-    app_menu_item = [[NSMenuItem new] autorelease];
-    [main_menu addItem:app_menu_item];
-    [NSApp setMainMenu: main_menu];
-
-    m_menu = [[[NSMenu alloc] initWithTitle:@"Movie"] autorelease];
-    new_menu_item(m_menu, @"Half Size", @selector(halfSize), @"0");
-    new_menu_item(m_menu, @"Normal Size", @selector(normalSize), @"1");
-    new_menu_item(m_menu, @"Double Size", @selector(doubleSize), @"2");
-
-    new_main_menu_item(main_menu, m_menu, @"Movie");
-
-    w_menu = [[[NSMenu alloc] initWithTitle:@"Window"] autorelease];
-    new_menu_item(w_menu, @"Minimize", @selector(performMiniaturize:), @"m");
-    new_menu_item(w_menu, @"Zoom", @selector(performZoom:), @"z");
-
-    new_main_menu_item(main_menu, w_menu, @"Window");
-    [pool release];
 }
 
 @implementation GLMPlayerWindow
@@ -690,12 +622,6 @@ void create_menu()
     // this is only valid as a starting value. it will be rewritten in the
     // -fullscreen method.
     return !vo_fs;
-}
-
-- (void)handleQuitEvent:(NSAppleEventDescriptor*)e
-         withReplyEvent:(NSAppleEventDescriptor*)r
-{
-    mplayer_put_key(_vo->key_fifo, MP_KEY_CLOSE_WIN);
 }
 
 - (void)keyDown:(NSEvent *)theEvent
@@ -821,57 +747,6 @@ void create_menu()
                 break;
         }
     }
-}
-
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
-{
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    NSArray *sorted_filenames = [filenames
-        sortedArrayUsingSelector:@selector(compare:)];
-
-    for (int i = 0; i < [sorted_filenames count]; i++) {
-        NSString *filename = [sorted_filenames objectAtIndex:i];
-        NSString *escaped_filename = escape_loadfile_name(filename);
-
-        char *cmd = talloc_asprintf(NULL, "loadfile \"%s\"%s",
-                                    [escaped_filename UTF8String],
-                                    (i == 0) ? "" : " append");
-        mp_input_queue_cmd(_vo->input_ctx, mp_input_parse_cmd(bstr0(cmd), ""));
-        talloc_free(cmd);
-    }
-
-    [pool release];
-}
-
-- (void)applicationWillBecomeActive:(NSNotification *)aNotification
-{
-    if (vo_fs && current_screen_has_dock_or_menubar(_vo)) {
-        struct vo_cocoa_state *s = _vo->cocoa;
-        [self setLevel:s->window_level];
-        [NSApp setPresentationOptions:NSApplicationPresentationHideDock|
-                                      NSApplicationPresentationHideMenuBar];
-    }
-}
-
-- (void)applicationWillResignActive:(NSNotification *)aNotification
-{
-    if (vo_fs) {
-        [self setLevel:NSNormalWindowLevel];
-        [NSApp setPresentationOptions:NSApplicationPresentationDefault];
-    }
-}
-
-- (void)applicationDidFinishLaunching:(NSNotification*)notification
-{
-    // Install an event handler so the Quit menu entry works
-    // The proper way using NSApp setDelegate: and
-    // applicationShouldTerminate: does not work,
-    // probably NSApplication never installs its handler.
-    [[NSAppleEventManager sharedAppleEventManager]
-        setEventHandler:self
-        andSelector:@selector(handleQuitEvent:withReplyEvent:)
-        forEventClass:kCoreEventClass
-        andEventID:kAEQuitApplication];
 }
 
 - (void)normalSize { [self mulSize:1.0f]; }

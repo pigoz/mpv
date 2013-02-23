@@ -84,6 +84,10 @@
 #include "video/out/x11_common.h"
 #endif
 
+#ifdef CONFIG_COCOA
+#include "osdep/macosx_application.h"
+#endif
+
 #include "audio/out/ao.h"
 
 #include "core/codecs.h"
@@ -3522,6 +3526,17 @@ static void run_playloop(struct MPContext *mpctx)
     }
 }
 
+static void schedule_run_playloop(struct MPContext *mpctx)
+{
+
+    #ifdef CONFIG_COCOA
+        cocoa_run_loop_schedule(run_playloop, mpctx);
+        cocoa_run_runloop();
+    #else
+        while (!mpctx->stop_play)
+            run_playloop(mpctx);
+    #endif
+}
 
 static int read_keys(void *ctx, int fd)
 {
@@ -4113,8 +4128,7 @@ goto_enable_cache: ;
     if (mpctx->opts.start_paused)
         pause_player(mpctx);
 
-    while (!mpctx->stop_play)
-        run_playloop(mpctx);
+    schedule_run_playloop(mpctx);
 
     mp_msg(MSGT_GLOBAL, MSGL_V, "EOF code: %d  \n", mpctx->stop_play);
 
@@ -4299,6 +4313,11 @@ static void osdep_preinit(int *p_argc, char ***p_argv)
         talloc_enable_leak_report();
 
     GetCpuCaps(&gCpuCaps);
+
+#ifdef CONFIG_COCOA
+    init_cocoa_application();
+    macosx_finder_args_preinit(p_argc, p_argv);
+#endif
 
 #ifdef __MINGW32__
     mp_get_converted_argv(p_argc, p_argv);
