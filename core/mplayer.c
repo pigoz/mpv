@@ -3525,6 +3525,21 @@ static void run_playloop(struct MPContext *mpctx)
     }
 }
 
+#ifdef CONFIG_COCOA
+#include "osdep/macosx_application.h"
+#endif
+
+static void schedule_run_playloop(struct MPContext *mpctx)
+{
+
+    #ifdef CONFIG_COCOA
+        cocoa_run_loop_schedule(run_playloop, mpctx);
+        cocoa_run_runloop();
+    #else
+        while (!mpctx->stop_play)
+            run_playloop(mpctx);
+    #endif
+}
 
 static int read_keys(void *ctx, int fd)
 {
@@ -4116,8 +4131,7 @@ goto_enable_cache: ;
     if (mpctx->opts.start_paused)
         pause_player(mpctx);
 
-    while (!mpctx->stop_play)
-        run_playloop(mpctx);
+    schedule_run_playloop(mpctx);
 
     mp_msg(MSGT_GLOBAL, MSGL_V, "EOF code: %d  \n", mpctx->stop_play);
 
