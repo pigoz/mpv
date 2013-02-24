@@ -137,7 +137,7 @@ void init_cocoa_application(void)
     app = [[Application alloc] init];
     [NSApp setDelegate:app];
     [app initialize_menu];
-    [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 }
 
 void cocoa_run_runloop(void)
@@ -157,14 +157,14 @@ void cocoa_run_loop_schedule(play_loop_callback callback,
 
 void cocoa_post_fake_event(void)
 {
-    NSEvent* event = [NSEvent otherEventWithType: NSApplicationDefined
-                                        location: NSMakePoint(0,0)
-                                   modifierFlags: 0
-                                       timestamp: 0.0
-                                    windowNumber: 0
-                                         context: nil
-                                         subtype: 0
-                                           data1: 0
-                                           data2: 0];
-    [NSApp postEvent: event atStart: true];
+    NSEvent* event = [NSEvent otherEventWithType:NSApplicationDefined
+                                        location:NSMakePoint(0,0)
+                                   modifierFlags:0
+                                       timestamp:0.0
+                                    windowNumber:0
+                                         context:nil
+                                         subtype:0
+                                           data1:0
+                                           data2:0];
+    [NSApp postEvent:event atStart:true];
 }
