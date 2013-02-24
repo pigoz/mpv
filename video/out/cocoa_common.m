@@ -786,24 +786,6 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
     [pool release];
 }
 
-- (void)applicationWillBecomeActive:(NSNotification *)aNotification
-{
-    if (vo_fs && current_screen_has_dock_or_menubar(_vo)) {
-        struct vo_cocoa_state *s = _vo->cocoa;
-        [self setLevel:s->window_level];
-        [NSApp setPresentationOptions:NSApplicationPresentationHideDock|
-                                      NSApplicationPresentationHideMenuBar];
-    }
-}
-
-- (void)applicationWillResignActive:(NSNotification *)aNotification
-{
-    if (vo_fs) {
-        [self setLevel:NSNormalWindowLevel];
-        [NSApp setPresentationOptions:NSApplicationPresentationDefault];
-    }
-}
-
 - (void)normalSize { [self mulSize:1.0f]; }
 
 - (void)halfSize { [self mulSize:0.5f];}
