@@ -80,7 +80,7 @@ static Application *app;
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Apple Menu"];
     [self mainMenuItemWithParent:mainMenu child:menu];
     [self menuItemWithParent:menu title:@"Quit mpv"
-                      action:@selector(stop:) keyEquivalent: @"q"];
+                      action:@selector(stop) keyEquivalent: @"q"];
     return [menu autorelease];
 }
 
