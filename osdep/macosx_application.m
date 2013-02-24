@@ -129,12 +129,14 @@ static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
 }
 @end
 
+static Application *app;
+
 void init_cocoa_application(void)
 {
     NSApp = [NSApplication sharedApplication];
-    Application *app = [[Application alloc] init];
+    app = [[Application alloc] init];
     [NSApp setDelegate:app];
-    [[NSApp delegate] initialize_menu];
+    [app initialize_menu];
     [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
 }
 
@@ -148,8 +150,9 @@ void cocoa_run_runloop(void)
 void cocoa_run_loop_schedule(play_loop_callback callback,
                              struct MPContext *context)
 {
-    [[NSApp delegate] setCallback:callback andContext:context];
-    [[NSApp delegate] schedule_timer];
+    [NSApp setDelegate:app];
+    [app setCallback:callback andContext:context];
+    [app schedule_timer];
 }
 
 void cocoa_post_fake_event(void)
