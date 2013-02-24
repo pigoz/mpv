@@ -804,19 +804,6 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
     }
 }
 
-- (void)applicationDidFinishLaunching:(NSNotification*)notification
-{
-    // Install an event handler so the Quit menu entry works
-    // The proper way using NSApp setDelegate: and
-    // applicationShouldTerminate: does not work,
-    // probably NSApplication never installs its handler.
-    [[NSAppleEventManager sharedAppleEventManager]
-        setEventHandler:self
-        andSelector:@selector(handleQuitEvent:withReplyEvent:)
-        forEventClass:kCoreEventClass
-        andEventID:kAEQuitApplication];
-}
-
 - (void)normalSize { [self mulSize:1.0f]; }
 
 - (void)halfSize { [self mulSize:0.5f];}
