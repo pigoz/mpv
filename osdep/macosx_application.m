@@ -77,12 +77,10 @@
 }
 @end
 
-static Application *app; // better than a singleton
-
 void init_cocoa_application(void)
 {
     NSApp = [NSApplication sharedApplication];
-    app = [[Application alloc] init];
+    Application *app = [[Application alloc] init];
     [NSApp setDelegate:app];
     [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
 }
@@ -97,8 +95,8 @@ void cocoa_run_runloop(void)
 void cocoa_run_loop_schedule(play_loop_callback callback,
                              struct MPContext *context)
 {
-    [app setCallback:callback andContext:context];
-    [app schedule_timer];
+    [[NSApp delegate] setCallback:callback andContext:context];
+    [[NSApp delegate] schedule_timer];
 }
 
 void cocoa_post_fake_event(void)
