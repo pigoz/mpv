@@ -22,12 +22,38 @@
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
 #define COCOA_MAGIC_TIMER_DELAY 0.001
 
+static NSMenuItem *new_menu_item(NSMenu *parent_menu, NSString *title,
+                                 SEL action, NSString *key_equivalent)
+{
+    NSMenuItem *new_item =
+        [[NSMenuItem alloc] initWithTitle:title action:action
+                                         keyEquivalent:key_equivalent];
+    [parent_menu addItem:new_item];
+    return [new_item autorelease];
+}
+
+static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
+                                      NSString *title)
+{
+    NSMenuItem *new_item =
+        [[NSMenuItem alloc] initWithTitle:title action:nil
+                                         keyEquivalent:@""];
+    [new_item setSubmenu:child_menu];
+    [parent_menu addItem:new_item];
+    return [new_item autorelease];
+}
+
+@interface NSApplication (NiblessAdditions)
+- (void)setAppleMenu:(NSMenu *)aMenu;
+@end
+
 @interface Application : NSObject<NSApplicationDelegate> {
     play_loop_callback _callback;
     struct MPContext*  _context;
     NSTimer*           _callback_timer;
 }
 
+- (void)initialize_menu;
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context;
 - (void)call_callback;
@@ -36,6 +62,32 @@
 @end
 
 @implementation Application
+- (void)initialize_menu
+{
+    NSMenu *main_menu, *apple_menu, *m_menu, *w_menu;
+
+    main_menu  = [[NSMenu new] autorelease];
+    apple_menu = [[[NSMenu alloc] initWithTitle:@"Apple Menu"] autorelease];
+    new_main_menu_item(main_menu, apple_menu, @"");
+    new_menu_item(apple_menu, @"Quit mpv", @selector(stop:), @"q");
+
+    [NSApp setMainMenu:main_menu];
+    [NSApp setAppleMenu:apple_menu];
+
+    m_menu = [[[NSMenu alloc] initWithTitle:@"Movie"] autorelease];
+    new_menu_item(m_menu, @"Half Size", nil, @"0");
+    new_menu_item(m_menu, @"Normal Size", nil, @"1");
+    new_menu_item(m_menu, @"Double Size", nil, @"2");
+
+    new_main_menu_item(main_menu, m_menu, @"Movie");
+
+    w_menu = [[[NSMenu alloc] initWithTitle:@"Window"] autorelease];
+    new_menu_item(w_menu, @"Minimize", nil, @"m");
+    new_menu_item(w_menu, @"Zoom", nil, @"z");
+
+    new_main_menu_item(main_menu, w_menu, @"Window");
+}
+
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context
 {
@@ -82,6 +134,7 @@ void init_cocoa_application(void)
     NSApp = [NSApplication sharedApplication];
     Application *app = [[Application alloc] init];
     [NSApp setDelegate:app];
+    [[NSApp delegate] initialize_menu];
     [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
 }
 

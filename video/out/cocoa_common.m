@@ -136,8 +136,6 @@ struct vo_cocoa_state {
 
 static int _instances = 0;
 
-static void create_menu(void);
-
 static struct vo_cocoa_state *vo_cocoa_init_state(struct vo *vo)
 {
     struct vo_cocoa_state *s = talloc_ptrtype(vo, s);
@@ -402,7 +400,7 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
         [[NSOpenGLContext alloc] initWithFormat:s->pixelFormat
                                    shareContext:nil];
 
-    create_menu();
+    // TODO: register here
 
     [s->window setRestorable:NO];
     [s->window setContentView:glView];
@@ -564,53 +562,6 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
     }
 
     return 8;
-}
-
-static NSMenuItem *new_menu_item(NSMenu *parent_menu, NSString *title,
-                                 SEL action, NSString *key_equivalent)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:action
-                                         keyEquivalent:key_equivalent];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
-                                      NSString *title)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:nil
-                                         keyEquivalent:@""];
-    [new_item setSubmenu:child_menu];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-void create_menu()
-{
-    NSAutoreleasePool *pool = [NSAutoreleasePool new];
-    NSMenu *main_menu, *m_menu, *w_menu;
-    NSMenuItem *app_menu_item;
-
-    main_menu = [[NSMenu new] autorelease];
-    app_menu_item = [[NSMenuItem new] autorelease];
-    [main_menu addItem:app_menu_item];
-    [NSApp setMainMenu: main_menu];
-
-    m_menu = [[[NSMenu alloc] initWithTitle:@"Movie"] autorelease];
-    new_menu_item(m_menu, @"Half Size", @selector(halfSize), @"0");
-    new_menu_item(m_menu, @"Normal Size", @selector(normalSize), @"1");
-    new_menu_item(m_menu, @"Double Size", @selector(doubleSize), @"2");
-
-    new_main_menu_item(main_menu, m_menu, @"Movie");
-
-    w_menu = [[[NSMenu alloc] initWithTitle:@"Window"] autorelease];
-    new_menu_item(w_menu, @"Minimize", @selector(performMiniaturize:), @"m");
-    new_menu_item(w_menu, @"Zoom", @selector(performZoom:), @"z");
-
-    new_main_menu_item(main_menu, w_menu, @"Window");
-    [pool release];
 }
 
 @implementation GLMPlayerWindow
