@@ -84,6 +84,10 @@
 #include "video/out/x11_common.h"
 #endif
 
+#ifdef CONFIG_COCOA
+#include "osdep/macosx_application.h"
+#endif
+
 #include "audio/out/ao.h"
 
 #include "core/codecs.h"
@@ -3525,10 +3529,6 @@ static void run_playloop(struct MPContext *mpctx)
     }
 }
 
-#ifdef CONFIG_COCOA
-#include "osdep/macosx_application.h"
-#endif
-
 static void schedule_run_playloop(struct MPContext *mpctx)
 {
 
@@ -4339,6 +4339,10 @@ static void osdep_preinit(int *p_argc, char ***p_argv)
 
 #ifdef HAVE_TERMCAP
     load_termcap(NULL); // load key-codes
+#endif
+
+#ifdef CONFIG_COCOA
+    init_cocoa_application();
 #endif
 }
 

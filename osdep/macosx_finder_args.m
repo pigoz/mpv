@@ -22,6 +22,7 @@
 #include "talloc.h"
 #include "core/playlist.h"
 #include "macosx_finder_args.h"
+#include "osdep/macosx_application.h"
 
 static struct playlist *files = NULL;
 

@@ -21,6 +21,9 @@
 
 #include "core/mp_core.h"
 
+// initializes Cocoa application
+void init_cocoa_application(void);
+
 // Runs the Cocoa Main Event Loop
 void cocoa_run_runloop(void);
 void cocoa_post_fake_event(void);

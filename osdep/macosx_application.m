@@ -22,28 +22,25 @@
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
 #define COCOA_MAGIC_TIMER_DELAY 0.001
 
-@interface Application : NSObject {
+@interface Application : NSObject<NSApplicationDelegate> {
     play_loop_callback _callback;
     struct MPContext*  _context;
     NSTimer*           _callback_timer;
 }
 
-- (id)initWithCallback:(play_loop_callback)callback
-             andContext:(struct MPContext *)context;
+- (void)setCallback:(play_loop_callback)callback
+         andContext:(struct MPContext *)context;
 - (void)call_callback;
 - (void)schedule_timer;
 - (void)stop;
 @end
 
 @implementation Application
-- (id)initWithCallback:(play_loop_callback)callback
-            andContext:(struct MPContext *)context
+- (void)setCallback:(play_loop_callback)callback
+         andContext:(struct MPContext *)context
 {
-    if (self = [super init]) {
-        self->_callback = callback;
-        self->_context  = context;
-    }
-    return self;
+    self->_callback = callback;
+    self->_context  = context;
 }
 
 - (void)call_callback
@@ -82,15 +79,25 @@
 
 static Application *app; // better than a singleton
 
+void init_cocoa_application(void)
+{
+    NSApp = [NSApplication sharedApplication];
+    app = [[Application alloc] init];
+    [NSApp setDelegate:app];
+    [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
+}
+
 void cocoa_run_runloop(void)
 {
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     [NSApp run];
+    [pool drain];
 }
 
 void cocoa_run_loop_schedule(play_loop_callback callback,
                              struct MPContext *context)
 {
-    app = [[Application alloc] initWithCallback:callback andContext:context];
+    [app setCallback:callback andContext:context];
     [app schedule_timer];
 }
 

@@ -211,10 +211,6 @@ int vo_cocoa_init(struct vo *vo)
     vo->cocoa = vo_cocoa_init_state(vo);
     vo->wakeup_period = 0.02;
     _instances++;
-
-    NSApplicationLoad();
-    NSApp = [NSApplication sharedApplication];
-    [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
     disable_power_management(vo);
 
     return 1;
@@ -416,7 +412,6 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
     [s->glContext makeCurrentContext];
     [s->window setVideoOutput:vo];
 
-    [NSApp setDelegate:s->window];
     [s->window setDelegate:s->window];
     [s->window setContentSize:s->current_video_size];
     [s->window setContentAspectRatio:s->current_video_size];
