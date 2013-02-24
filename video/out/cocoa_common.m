@@ -400,7 +400,11 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
         [[NSOpenGLContext alloc] initWithFormat:s->pixelFormat
                                    shareContext:nil];
 
-    // TODO: register here
+    cocoa_register_menu_item_action(MPM_H_SIZE,   @selector(halfSize));
+    cocoa_register_menu_item_action(MPM_N_SIZE,   @selector(normalSize));
+    cocoa_register_menu_item_action(MPM_D_SIZE,   @selector(doubleSize));
+    cocoa_register_menu_item_action(MPM_MINIMIZE, @selector(performMiniaturize:));
+    cocoa_register_menu_item_action(MPM_ZOOM,     @selector(performZoom:));
 
     [s->window setRestorable:NO];
     [s->window setContentView:glView];

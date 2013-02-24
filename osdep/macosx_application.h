@@ -21,15 +21,26 @@
 
 #include "core/mp_core.h"
 
+// Playloop callback function pointer
+typedef void(*play_loop_callback)(struct MPContext *);
+
+// Menu Keys identifing menu items
+typedef enum {
+    MPM_H_SIZE,
+    MPM_N_SIZE,
+    MPM_D_SIZE,
+    MPM_MINIMIZE,
+    MPM_ZOOM,
+} MPMenuKey;
+
+void cocoa_register_menu_item_action(MPMenuKey key, void* action);
+
 // initializes Cocoa application
 void init_cocoa_application(void);
 
 // Runs the Cocoa Main Event Loop
 void cocoa_run_runloop(void);
 void cocoa_post_fake_event(void);
-
-// Definition of the playloop callback function pointer
-typedef void(*play_loop_callback)(struct MPContext *);
 
 // Adds play_loop as a timer of the Main Cocoa Event Loop
 void cocoa_run_loop_schedule(play_loop_callback callback,

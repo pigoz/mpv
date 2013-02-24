@@ -22,71 +22,96 @@
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
 #define COCOA_MAGIC_TIMER_DELAY 0.001
 
-static NSMenuItem *new_menu_item(NSMenu *parent_menu, NSString *title,
-                                 SEL action, NSString *key_equivalent)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:action
-                                         keyEquivalent:key_equivalent];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
-                                      NSString *title)
-{
-    NSMenuItem *new_item =
-        [[NSMenuItem alloc] initWithTitle:title action:nil
-                                         keyEquivalent:@""];
-    [new_item setSubmenu:child_menu];
-    [parent_menu addItem:new_item];
-    return [new_item autorelease];
-}
-
-@interface NSApplication (NiblessAdditions)
-- (void)setAppleMenu:(NSMenu *)aMenu;
-@end
-
 @interface Application : NSObject<NSApplicationDelegate> {
-    play_loop_callback _callback;
-    struct MPContext*  _context;
-    NSTimer*           _callback_timer;
+    play_loop_callback   _callback;
+    struct MPContext*    _context;
+    NSTimer*             _callback_timer;
+    NSMutableDictionary* _menu_items;
 }
 
 - (void)initialize_menu;
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context;
+- (void)registerSelector:(SEL)selector forKey:(MPMenuKey)key;
 - (void)call_callback;
 - (void)schedule_timer;
 - (void)stop;
 @end
 
+static Application *app;
+
+@interface Application (PrivateMethods)
+- (NSMenuItem *)menuItemWithParent:(NSMenu *)parent
+                             title:(NSString *)title
+                            action:(SEL)selector
+                     keyEquivalent:(NSString*)key;
+
+- (NSMenuItem *)mainMenuItemWithParent:(NSMenu *)parent
+                                 child:(NSMenu *)child;
+- (void)registerMenuItem:(NSMenuItem*)menuItem forKey:(MPMenuKey)key;
+- (NSMenu *)appleMenuWithMainMenu:(NSMenu *)mainMenu;
+- (NSMenu *)movieMenu;
+- (NSMenu *)windowMenu;
+@end
+
+@interface NSApplication (NiblessAdditions)
+- (void)setAppleMenu:(NSMenu *)aMenu;
+@end
+
 @implementation Application
+- (id)init
+{
+    if (self = [super init]) {
+        self->_menu_items = [[NSMutableDictionary alloc] init];
+    }
+
+    return self;
+}
+
+#define _R(P, T, E, K) \
+    { \
+        NSMenuItem *tmp = [self menuItemWithParent:(P) title:(T) \
+                                            action:nil keyEquivalent:(E)]; \
+        [self registerMenuItem:tmp forKey:(K)]; \
+    }
+
+- (NSMenu *)appleMenuWithMainMenu:(NSMenu *)mainMenu
+{
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Apple Menu"];
+    [self mainMenuItemWithParent:mainMenu child:menu];
+    [self menuItemWithParent:menu title:@"Quit mpv"
+                      action:@selector(stop:) keyEquivalent: @"q"];
+    return [menu autorelease];
+}
+
+- (NSMenu *)movieMenu
+{
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Movie"];
+    _R(menu, @"Half Size",   @"0", MPM_H_SIZE)
+    _R(menu, @"Normal Size", @"1", MPM_N_SIZE)
+    _R(menu, @"Double Size", @"2", MPM_D_SIZE)
+    return [menu autorelease];
+}
+
+- (NSMenu *)windowMenu
+{
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Window"];
+    _R(menu, @"Minimize", @"m", MPM_MINIMIZE)
+    _R(menu, @"Zoom",     @"z", MPM_ZOOM)
+    return [menu autorelease];
+}
+
 - (void)initialize_menu
 {
-    NSMenu *main_menu, *apple_menu, *m_menu, *w_menu;
-
-    main_menu  = [[NSMenu new] autorelease];
-    apple_menu = [[[NSMenu alloc] initWithTitle:@"Apple Menu"] autorelease];
-    new_main_menu_item(main_menu, apple_menu, @"");
-    new_menu_item(apple_menu, @"Quit mpv", @selector(stop:), @"q");
-
+    NSMenu *main_menu = [[NSMenu new] autorelease];
     [NSApp setMainMenu:main_menu];
-    [NSApp setAppleMenu:apple_menu];
+    [NSApp setAppleMenu:[self appleMenuWithMainMenu:main_menu]];
 
-    m_menu = [[[NSMenu alloc] initWithTitle:@"Movie"] autorelease];
-    new_menu_item(m_menu, @"Half Size", nil, @"0");
-    new_menu_item(m_menu, @"Normal Size", nil, @"1");
-    new_menu_item(m_menu, @"Double Size", nil, @"2");
-
-    new_main_menu_item(main_menu, m_menu, @"Movie");
-
-    w_menu = [[[NSMenu alloc] initWithTitle:@"Window"] autorelease];
-    new_menu_item(w_menu, @"Minimize", nil, @"m");
-    new_menu_item(w_menu, @"Zoom", nil, @"z");
-
-    new_main_menu_item(main_menu, w_menu, @"Window");
+    [app mainMenuItemWithParent:main_menu child:[self movieMenu]];
+    [app mainMenuItemWithParent:main_menu child:[self windowMenu]];
 }
+
+#undef _R
 
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context
@@ -127,9 +152,50 @@ static NSMenuItem *new_main_menu_item(NSMenu *parent_menu, NSMenu *child_menu,
     // I <3 cocoa bugs!
     cocoa_post_fake_event();
 }
+
+- (void)registerMenuItem:(NSMenuItem*)menuItem forKey:(MPMenuKey)key
+{
+    [self->_menu_items setObject:menuItem forKey:[NSNumber numberWithInt:key]];
+}
+
+- (void)registerSelector:(SEL)action forKey:(MPMenuKey)key
+{
+    NSNumber *boxedKey = [NSNumber numberWithInt:key];
+    NSMenuItem *item   = [self->_menu_items objectForKey:boxedKey];
+    if (item) {
+        [item setAction:action];
+    }
+}
+
+- (NSMenuItem *)menuItemWithParent:(NSMenu *)parent
+                             title:(NSString *)title
+                            action:(SEL)action
+                     keyEquivalent:(NSString*)key
+{
+
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
+                                                  action:action
+                                           keyEquivalent:key];
+    [parent addItem:item];
+    return [item autorelease];
+}
+
+- (NSMenuItem *)mainMenuItemWithParent:(NSMenu *)parent
+                                 child:(NSMenu *)child
+{
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@""
+                                                  action:nil
+                                           keyEquivalent:@""];
+    [item setSubmenu:child];
+    [parent addItem:item];
+    return [item autorelease];
+}
 @end
 
-static Application *app;
+void cocoa_register_menu_item_action(MPMenuKey key, void* action)
+{
+    [app registerSelector:(SEL)action forKey:key];
+}
 
 void init_cocoa_application(void)
 {
