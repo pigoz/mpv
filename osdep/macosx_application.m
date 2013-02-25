@@ -16,27 +16,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "osdep/macosx_application.h"
-#import "Cocoa/Cocoa.h"
+#include "osdep/macosx_application_objc.h"
+#include "video/out/vo.h"
+#include "video/out/osx_common.h"
+#include "core/input/input.h"
+#include "core/mp_fifo.h"
+#include "talloc.h"
 
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
 #define COCOA_MAGIC_TIMER_DELAY 0.001
-
-@interface Application : NSObject<NSApplicationDelegate> {
-    play_loop_callback   _callback;
-    struct MPContext*    _context;
-    NSTimer*             _callback_timer;
-    NSMutableDictionary* _menu_items;
-}
-
-- (void)initialize_menu;
-- (void)setCallback:(play_loop_callback)callback
-         andContext:(struct MPContext *)context;
-- (void)registerSelector:(SEL)selector forKey:(MPMenuKey)key;
-- (void)call_callback;
-- (void)schedule_timer;
-- (void)stop;
-@end
 
 static Application *app;
 
@@ -59,10 +47,15 @@ static Application *app;
 @end
 
 @implementation Application
+@synthesize files = _files;
+@synthesize willStopOnOpenEvent = _will_stop_on_open_event;
+
 - (id)init
 {
     if (self = [super init]) {
         self->_menu_items = [[NSMutableDictionary alloc] init];
+        self->_first_open_event_recived = NO;
+        self->_will_stop_on_open_event = NO;
     }
 
     return self;
@@ -189,6 +182,27 @@ static Application *app;
     [item setSubmenu:child];
     [parent addItem:item];
     return [item autorelease];
+}
+
+- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
+{
+    self->_files = [filenames sortedArrayUsingSelector:@selector(compare:)];
+    if (self->_first_open_event_recived) {
+        for (int i = 0; i < [self->_files count]; i++) {
+            NSString *filename = [self->_files objectAtIndex:i];
+            NSString *escaped_filename = escape_loadfile_name(filename);
+            char *cmd = talloc_asprintf(NULL, "loadfile \"%s\"%s",
+                                        [escaped_filename UTF8String],
+                                        (i == 0) ? "" : " append");
+            mp_input_queue_cmd(self->_context->video_out->input_ctx,
+                               mp_input_parse_cmd(bstr0(cmd), ""));
+            talloc_free(cmd);
+        }
+    } else {
+        self->_first_open_event_recived = YES;
+        if (_will_stop_on_open_event)
+            [NSApp stop:nil];
+    }
 }
 @end
 

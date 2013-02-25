@@ -22,7 +22,7 @@
 #include "talloc.h"
 #include "core/playlist.h"
 #include "macosx_finder_args.h"
-#include "osdep/macosx_application.h"
+#include "osdep/macosx_application_objc.h"
 
 static struct playlist *files = NULL;
 
@@ -37,6 +37,7 @@ bool psn_matches_current_process(char *psn_arg_to_check);
 @implementation FileOpenDelegate
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
+    NSLog(@"%@\n", [[NSProcessInfo processInfo] arguments]);
     NSArray *sorted_filenames = [filenames
         sortedArrayUsingSelector:@selector(compare:)];
     files = talloc_zero(NULL, struct playlist);
@@ -48,11 +49,9 @@ bool psn_matches_current_process(char *psn_arg_to_check);
 
 void macosx_wait_fileopen_events()
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    NSApp = [NSApplication sharedApplication];
-    [NSApp setDelegate: [[[FileOpenDelegate alloc] init] autorelease]];
+    Application *app = [NSApp delegate];
+    app.willStopOnOpenEvent = YES;
     [NSApp run]; // block until we recive the fileopen events
-    [pool release];
 }
 
 void macosx_redirect_output_to_logfile(const char *filename)
@@ -84,8 +83,9 @@ bool macosx_finder_args(m_config_t *config, struct playlist *pl_files,
     if (argc==1 && psn_matches_current_process(argv[0])) {
         macosx_redirect_output_to_logfile("mpv");
         m_config_set_option0(config, "quiet", NULL);
-        macosx_wait_fileopen_events();
     }
+
+    macosx_wait_fileopen_events();
 
     if (files) {
         playlist_transfer_entries(pl_files, files);
