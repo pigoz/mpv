@@ -24,37 +24,26 @@
 #include "macosx_finder_args.h"
 #include "osdep/macosx_application_objc.h"
 
-static struct playlist *files = NULL;
+static struct playlist *_files   = NULL;
 
-void macosx_wait_fileopen_events(void);
-void macosx_redirect_output_to_logfile(const char *filename);
-bool psn_matches_current_process(char *psn_arg_to_check);
-
-@interface FileOpenDelegate : NSObject
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames;
-@end
-
-@implementation FileOpenDelegate
-- (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
+static void handle_files_array(NSArray *files)
 {
-    NSLog(@"%@\n", [[NSProcessInfo processInfo] arguments]);
-    NSArray *sorted_filenames = [filenames
-        sortedArrayUsingSelector:@selector(compare:)];
-    files = talloc_zero(NULL, struct playlist);
-    for (NSString *filename in sorted_filenames)
-        playlist_add_file(files, [filename UTF8String]);
-    [NSApp stop:nil]; // stop the runloop (give back control to mplayer2 code)
+    if (files) {
+        _files = talloc_zero(NULL, struct playlist);
+        for (NSString *filename in files)
+            playlist_add_file(_files, [filename UTF8String]);
+    }
 }
-@end
 
-void macosx_wait_fileopen_events()
+static void macosx_wait_fileopen_events()
 {
     Application *app = [NSApp delegate];
     app.willStopOnOpenEvent = YES;
-    [NSApp run]; // block until we recive the fileopen events
+    cocoa_run_runloop(); // block until done
+    handle_files_array(app.files);
 }
 
-void macosx_redirect_output_to_logfile(const char *filename)
+static void macosx_redirect_output_to_logfile(const char *filename)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSString *log_path = [NSHomeDirectory() stringByAppendingPathComponent:
@@ -64,33 +53,33 @@ void macosx_redirect_output_to_logfile(const char *filename)
     [pool release];
 }
 
-bool psn_matches_current_process(char *psn_arg_to_check)
+static bool psn_matches_current_process(char *psn_arg_to_check)
 {
     ProcessSerialNumber psn;
-    char psn_arg[5+10+1+10+1];
+    size_t psn_length = 5+10+1+10;
+    char psn_arg[psn_length+1];
 
     GetCurrentProcess(&psn);
     snprintf(psn_arg, 5+10+1+10+1, "-psn_%u_%u",
              psn.highLongOfPSN, psn.lowLongOfPSN);
-    psn_arg[5+10+1+10]=0;
+    psn_arg[psn_length]=0;
 
     return strcmp(psn_arg, psn_arg_to_check) == 0;
 }
 
 bool macosx_finder_args(m_config_t *config, struct playlist *pl_files,
-                         int argc, char **argv)
+                        int argc, char **argv)
 {
     if (argc==1 && psn_matches_current_process(argv[0])) {
         macosx_redirect_output_to_logfile("mpv");
         m_config_set_option0(config, "quiet", NULL);
+        macosx_wait_fileopen_events();
     }
 
-    macosx_wait_fileopen_events();
-
-    if (files) {
-        playlist_transfer_entries(pl_files, files);
-        talloc_free(files);
-        files = NULL;
+    if (_files) {
+        playlist_transfer_entries(pl_files, _files);
+        talloc_free(_files);
+        _files = NULL;
         return true;
     } else {
         return false;

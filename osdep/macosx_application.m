@@ -17,11 +17,10 @@
  */
 
 #include "osdep/macosx_application_objc.h"
-#include "video/out/vo.h"
-#include "video/out/osx_common.h"
 #include "core/input/input.h"
 #include "core/mp_fifo.h"
 #include "talloc.h"
+#include "video/out/osx_common.h"
 
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
 #define COCOA_MAGIC_TIMER_DELAY 0.001
@@ -40,6 +39,7 @@ static Application *app;
 - (NSMenu *)appleMenuWithMainMenu:(NSMenu *)mainMenu;
 - (NSMenu *)movieMenu;
 - (NSMenu *)windowMenu;
+- (void)handleFiles;
 @end
 
 @interface NSApplication (NiblessAdditions)
@@ -56,6 +56,8 @@ static Application *app;
         self->_menu_items = [[NSMutableDictionary alloc] init];
         self->_first_open_event_recived = NO;
         self->_will_stop_on_open_event = NO;
+        self.files = nil;
+        self.willStopOnOpenEvent = NO;
     }
 
     return self;
@@ -186,23 +188,30 @@ static Application *app;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-    self->_files = [filenames sortedArrayUsingSelector:@selector(compare:)];
+    self.files = [filenames sortedArrayUsingSelector:@selector(compare:)];
+
     if (self->_first_open_event_recived) {
-        for (int i = 0; i < [self->_files count]; i++) {
-            NSString *filename = [self->_files objectAtIndex:i];
-            NSString *escaped_filename = escape_loadfile_name(filename);
-            char *cmd = talloc_asprintf(NULL, "loadfile \"%s\"%s",
-                                        [escaped_filename UTF8String],
-                                        (i == 0) ? "" : " append");
-            mp_input_queue_cmd(self->_context->video_out->input_ctx,
-                               mp_input_parse_cmd(bstr0(cmd), ""));
-            talloc_free(cmd);
-        }
+        [self handleFiles];
     } else {
         self->_first_open_event_recived = YES;
-        if (_will_stop_on_open_event)
+        if (self.willStopOnOpenEvent)
             [NSApp stop:nil];
     }
+}
+
+- (void)handleFiles
+{
+    void *ctx = talloc_new(NULL);
+    [self.files enumerateObjectsUsingBlock:^(id obj, NSUInteger i, BOOL *_){
+        const char *file = [escape_loadfile_name(obj) UTF8String];
+        const char *append = (i == 0) ? "" : " append";
+        char *cmd = talloc_asprintf(ctx, "loadfile \"%s\"%s", file, append);
+
+        struct input_ctx *ictx = self->_context->input;
+        mp_cmd_t *cmdt         = mp_input_parse_cmd(bstr0(cmd), "");
+        mp_input_queue_cmd(ictx, cmdt);
+    }];
+    talloc_free(ctx);
 }
 @end
 
