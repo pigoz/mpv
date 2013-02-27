@@ -24,7 +24,6 @@
     struct MPContext*    _context;
     NSTimer*             _callback_timer;
     NSMutableDictionary* _menu_items;
-    bool                 _first_open_event_recived;
 }
 
 - (void)initialize_menu;
@@ -36,6 +35,7 @@
 - (void)stop;
 
 @property(nonatomic, retain) NSArray *files;
+@property(nonatomic, retain) NSMutableArray *argumentsList;
 @property(nonatomic, assign) BOOL willStopOnOpenEvent;
 @end
 

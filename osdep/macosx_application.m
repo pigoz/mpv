@@ -48,15 +48,15 @@ static Application *app;
 
 @implementation Application
 @synthesize files = _files;
+@synthesize argumentsList = _arguments_list;
 @synthesize willStopOnOpenEvent = _will_stop_on_open_event;
 
 - (id)init
 {
     if (self = [super init]) {
         self->_menu_items = [[NSMutableDictionary alloc] init];
-        self->_first_open_event_recived = NO;
-        self->_will_stop_on_open_event = NO;
         self.files = nil;
+        self.argumentsList = [[[NSMutableArray alloc] init] autorelease];
         self.willStopOnOpenEvent = NO;
     }
 
@@ -188,14 +188,29 @@ static Application *app;
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-    self.files = [filenames sortedArrayUsingSelector:@selector(compare:)];
+    NSMutableArray *filesToOpen = [[[NSMutableArray alloc] init] autorelease];
 
-    if (self->_first_open_event_recived) {
-        [self handleFiles];
+    [filenames enumerateObjectsUsingBlock:^(id obj, NSUInteger i, BOOL *_) {
+        NSInteger place = [app.argumentsList indexOfObject:obj];
+        if (place == NSNotFound) {
+            // Proper new event ^_^
+            [filesToOpen addObject:obj];
+        } else {
+            // This file was already opened from the CLI. Cocoa is trying to
+            // open it again using events. Ignore it!
+            [app.argumentsList removeObjectAtIndex:place];
+        }
+    }];
+
+    if (self.files) {
+        [self.files release];
+    }
+
+    self.files = [filesToOpen sortedArrayUsingSelector:@selector(compare:)];
+    if (self.willStopOnOpenEvent) {
+        [NSApp stop:nil];
     } else {
-        self->_first_open_event_recived = YES;
-        if (self.willStopOnOpenEvent)
-            [NSApp stop:nil];
+        [self handleFiles];
     }
 }
 
@@ -256,4 +271,60 @@ void cocoa_post_fake_event(void)
                                            data1:0
                                            data2:0];
     [NSApp postEvent:event atStart:true];
+}
+
+static void macosx_wait_fileopen_events()
+{
+    app.willStopOnOpenEvent = YES;
+    cocoa_run_runloop(); // block until done
+}
+
+static void macosx_redirect_output_to_logfile(const char *filename)
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    NSString *log_path = [NSHomeDirectory() stringByAppendingPathComponent:
+        [@"Library/Logs/" stringByAppendingFormat:@"%s.log", filename]];
+    freopen([log_path fileSystemRepresentation], "a", stdout);
+    freopen([log_path fileSystemRepresentation], "a", stderr);
+    [pool release];
+}
+
+static bool psn_matches_current_process(char *psn_arg_to_check)
+{
+    ProcessSerialNumber psn;
+    size_t psn_length = 5+10+1+10;
+    char psn_arg[psn_length+1];
+
+    GetCurrentProcess(&psn);
+    snprintf(psn_arg, 5+10+1+10+1, "-psn_%u_%u",
+             psn.highLongOfPSN, psn.lowLongOfPSN);
+    psn_arg[psn_length]=0;
+
+    return strcmp(psn_arg, psn_arg_to_check) == 0;
+}
+
+void macosx_finder_args_preinit(int *argc, char ***argv)
+{
+    if (*argc==2 && psn_matches_current_process((*argv)[1])) {
+        macosx_redirect_output_to_logfile("mpv");
+        macosx_wait_fileopen_events();
+
+        char **cocoa_argv = talloc_zero_array(NULL, char*, [app.files count] + 2);
+        cocoa_argv[0]     = "mpv";
+        cocoa_argv[1]     = "--quiet";
+        int  cocoa_argc   = 2;
+
+        for (NSString *filename in app.files) {
+            cocoa_argv[cocoa_argc] = (char*)[filename UTF8String];
+            cocoa_argc++;
+        }
+
+        *argc = cocoa_argc;
+        *argv = cocoa_argv;
+    }
+
+    for (int i = 0; i < *argc; i++ ) {
+        NSString *arg = [NSString stringWithUTF8String:(*argv)[i]];
+        [app.argumentsList addObject:arg];
+    }
 }

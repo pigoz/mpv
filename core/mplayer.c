@@ -4317,6 +4317,11 @@ static void osdep_preinit(int *p_argc, char ***p_argv)
 
     GetCpuCaps(&gCpuCaps);
 
+#ifdef CONFIG_COCOA
+    init_cocoa_application();
+    macosx_finder_args_preinit(p_argc, p_argv);
+#endif
+
 #ifdef __MINGW32__
     mp_get_converted_argv(p_argc, p_argv);
 #endif
@@ -4339,10 +4344,6 @@ static void osdep_preinit(int *p_argc, char ***p_argv)
 
 #ifdef HAVE_TERMCAP
     load_termcap(NULL); // load key-codes
-#endif
-
-#ifdef CONFIG_COCOA
-    init_cocoa_application();
 #endif
 }
 

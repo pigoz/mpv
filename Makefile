@@ -45,7 +45,6 @@ SOURCES-$(LIBBS2B)              += audio/filter/af_bs2b.c
 SOURCES-$(LIBPOSTPROC)          += video/filter/vf_pp.c
 SOURCES-$(LIBSMBCLIENT)         += stream/stream_smb.c
 
-SOURCES-$(MACOSX_FINDER)        += osdep/macosx_finder_args.m
 SOURCES-$(MACOSX_BUNDLE)        += osdep/macosx_bundle.m
 SOURCES-$(COCOA)                += video/out/osx_common.m \
                                    video/out/cocoa_common.m \

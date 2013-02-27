@@ -53,6 +53,8 @@ static void macosx_redirect_output_to_logfile(const char *filename)
     [pool release];
 }
 
+
+
 static bool psn_matches_current_process(char *psn_arg_to_check)
 {
     ProcessSerialNumber psn;
@@ -85,3 +87,4 @@ bool macosx_finder_args(m_config_t *config, struct playlist *pl_files,
         return false;
     }
 }
+

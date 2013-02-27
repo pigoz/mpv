@@ -46,4 +46,5 @@ void cocoa_post_fake_event(void);
 void cocoa_run_loop_schedule(play_loop_callback callback,
                              struct MPContext *context);
 
+void macosx_finder_args_preinit(int *argc, char ***argv);
 #endif /* MPV_MACOSX_APPLICATION */
