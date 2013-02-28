@@ -321,10 +321,10 @@ void macosx_finder_args_preinit(int *argc, char ***argv)
 
         *argc = cocoa_argc;
         *argv = cocoa_argv;
-    }
-
-    for (int i = 0; i < *argc; i++ ) {
-        NSString *arg = [NSString stringWithUTF8String:(*argv)[i]];
-        [app.argumentsList addObject:arg];
+    } else {
+        for (int i = 0; i < *argc; i++ ) {
+            NSString *arg = [NSString stringWithUTF8String:(*argv)[i]];
+            [app.argumentsList addObject:arg];
+        }
     }
 }
