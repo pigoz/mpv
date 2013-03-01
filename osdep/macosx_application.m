@@ -52,10 +52,15 @@ static Application *app;
 @synthesize argumentsList = _arguments_list;
 @synthesize willStopOnOpenEvent = _will_stop_on_open_event;
 
+@synthesize callback = _callback_;
+@synthesize context = _context_;
+@synthesize callbackTimer = _callback_timer_;
+@synthesize menuItems = _menu_items_;
+
 - (id)init
 {
     if (self = [super init]) {
-        self->_menu_items = [[NSMutableDictionary alloc] init];
+        self.menuItems = [[[NSMutableDictionary alloc] init] autorelease];
         self.files = nil;
         self.argumentsList = [[[NSMutableArray alloc] init] autorelease];
         self.willStopOnOpenEvent = NO;
@@ -112,50 +117,50 @@ static Application *app;
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context
 {
-    self->_callback = callback;
-    self->_context  = context;
+    self.callback = callback;
+    self.context  = context;
 }
 
 - (void)call_callback
 {
-    if (self->_context->stop_play) {
+    if (self.context->stop_play) {
         [NSApp stop:nil];
         cocoa_post_fake_event();
     } else {
-        self->_callback(self->_context);
+        self.callback(self.context);
     }
 }
 
 - (void)schedule_timer
 {
-    self->_callback_timer =
+    self.callbackTimer =
         [NSTimer timerWithTimeInterval:COCOA_MAGIC_TIMER_DELAY
                                 target:self
                               selector:@selector(call_callback)
                               userInfo:nil
                                repeats:YES];
 
-    [[NSRunLoop currentRunLoop] addTimer:self->_callback_timer
+    [[NSRunLoop currentRunLoop] addTimer:self.callbackTimer
                                 forMode:NSDefaultRunLoopMode];
 
-    [[NSRunLoop currentRunLoop] addTimer:self->_callback_timer
+    [[NSRunLoop currentRunLoop] addTimer:self.callbackTimer
                                 forMode:NSEventTrackingRunLoopMode];
 }
 
 - (void)stopPlayback
 {
-    mplayer_put_key(app->_context->key_fifo, MP_KEY_CLOSE_WIN);
+    mplayer_put_key(app.context->key_fifo, MP_KEY_CLOSE_WIN);
 }
 
 - (void)registerMenuItem:(NSMenuItem*)menuItem forKey:(MPMenuKey)key
 {
-    [self->_menu_items setObject:menuItem forKey:[NSNumber numberWithInt:key]];
+    [self.menuItems setObject:menuItem forKey:[NSNumber numberWithInt:key]];
 }
 
 - (void)registerSelector:(SEL)action forKey:(MPMenuKey)key
 {
     NSNumber *boxedKey = [NSNumber numberWithInt:key];
-    NSMenuItem *item   = [self->_menu_items objectForKey:boxedKey];
+    NSMenuItem *item   = [self.menuItems objectForKey:boxedKey];
     if (item) {
         [item setAction:action];
     }
@@ -231,7 +236,7 @@ static Application *app;
         const char *append = (i == 0) ? "" : " append";
         char *cmd = talloc_asprintf(ctx, "loadfile \"%s\"%s", file, append);
 
-        struct input_ctx *ictx = self->_context->input;
+        struct input_ctx *ictx = self.context->input;
         mp_cmd_t *cmdt         = mp_input_parse_cmd(bstr0(cmd), "");
         mp_input_queue_cmd(ictx, cmdt);
     }];

@@ -19,13 +19,7 @@
 #import <Cocoa/Cocoa.h>
 #include "osdep/macosx_application.h"
 
-@interface Application : NSObject<NSApplicationDelegate> {
-    play_loop_callback   _callback;
-    struct MPContext*    _context;
-    NSTimer*             _callback_timer;
-    NSMutableDictionary* _menu_items;
-}
-
+@interface Application : NSObject<NSApplicationDelegate>
 - (void)initialize_menu;
 - (void)setCallback:(play_loop_callback)callback
          andContext:(struct MPContext *)context;
@@ -34,6 +28,10 @@
 - (void)schedule_timer;
 - (void)stopPlayback;
 
+@property(nonatomic, assign) play_loop_callback callback;
+@property(nonatomic, assign) struct MPContext*  context;
+@property(nonatomic, retain) NSTimer* callbackTimer;
+@property(nonatomic, retain) NSMutableDictionary* menuItems;
 @property(nonatomic, retain) NSArray *files;
 @property(nonatomic, retain) NSMutableArray *argumentsList;
 @property(nonatomic, assign) BOOL willStopOnOpenEvent;
