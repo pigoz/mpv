@@ -3526,14 +3526,29 @@ static void run_playloop(struct MPContext *mpctx)
     }
 }
 
+static void run_playloop_opaque_callback(void *context)
+{
+    run_playloop((struct MPContext *)context);
+}
+
+static int check_stop_play(void *context)
+{
+    struct MPContext *mpctx = context;
+    return mpctx->stop_play;
+}
+
 static void schedule_run_playloop(struct MPContext *mpctx)
 {
 
     #ifdef CONFIG_COCOA
-        cocoa_run_loop_schedule(run_playloop, mpctx);
+        cocoa_run_loop_schedule(run_playloop_opaque_callback,
+                                check_stop_play,
+                                mpctx, // passed in as opaque type
+                                mpctx->input,
+                                mpctx->key_fifo);
         cocoa_run_runloop();
     #else
-        while (!mpctx->stop_play)
+        while (!check_stop_play(mpctx))
             run_playloop(mpctx);
     #endif
 }

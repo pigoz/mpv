@@ -16,11 +16,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "osdep/macosx_application_objc.h"
-#include "core/input/input.h"
-#include "core/input/keycodes.h"
-#include "core/mp_fifo.h"
 #include "talloc.h"
+
+#include "osdep/macosx_application_objc.h"
+#include "core/input/keycodes.h"
 #include "video/out/osx_common.h"
 
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well
@@ -52,10 +51,13 @@ static Application *app;
 @synthesize argumentsList = _arguments_list;
 @synthesize willStopOnOpenEvent = _will_stop_on_open_event;
 
-@synthesize callback = _callback_;
-@synthesize context = _context_;
-@synthesize callbackTimer = _callback_timer_;
-@synthesize menuItems = _menu_items_;
+@synthesize callback = _callback;
+@synthesize shouldStopPlayback = _should_stop_playback;
+@synthesize context = _context;
+@synthesize inputContext = _input_context;
+@synthesize keyFIFO = _key_fifo;
+@synthesize callbackTimer = _callback_timer;
+@synthesize menuItems = _menu_items;
 
 - (id)init
 {
@@ -114,16 +116,9 @@ static Application *app;
 
 #undef _R
 
-- (void)setCallback:(play_loop_callback)callback
-         andContext:(struct MPContext *)context
-{
-    self.callback = callback;
-    self.context  = context;
-}
-
 - (void)call_callback
 {
-    if (self.context->stop_play) {
+    if (self.shouldStopPlayback(self.context)) {
         [NSApp stop:nil];
         cocoa_post_fake_event();
     } else {
@@ -149,7 +144,7 @@ static Application *app;
 
 - (void)stopPlayback
 {
-    mplayer_put_key(app.context->key_fifo, MP_KEY_CLOSE_WIN);
+    mplayer_put_key(app.keyFIFO, MP_KEY_CLOSE_WIN);
 }
 
 - (void)registerMenuItem:(NSMenuItem*)menuItem forKey:(MPMenuKey)key
@@ -235,10 +230,8 @@ static Application *app;
         const char *file = [escape_loadfile_name(obj) UTF8String];
         const char *append = (i == 0) ? "" : " append";
         char *cmd = talloc_asprintf(ctx, "loadfile \"%s\"%s", file, append);
-
-        struct input_ctx *ictx = self.context->input;
-        mp_cmd_t *cmdt         = mp_input_parse_cmd(bstr0(cmd), "");
-        mp_input_queue_cmd(ictx, cmdt);
+        mp_cmd_t *cmdt = mp_input_parse_cmd(bstr0(cmd), "");
+        mp_input_queue_cmd(self.inputContext, cmdt);
     }];
     talloc_free(ctx);
 }
@@ -266,10 +259,17 @@ void cocoa_run_runloop(void)
 }
 
 void cocoa_run_loop_schedule(play_loop_callback callback,
-                             struct MPContext *context)
+                             should_stop_callback stop_query,
+                             void *context,
+                             struct input_ctx *input_context,
+                             struct mp_fifo *key_fifo)
 {
     [NSApp setDelegate:app];
-    [app setCallback:callback andContext:context];
+    app.callback            = callback;
+    app.context             = context;
+    app.shouldStopPlayback  = stop_query;
+    app.inputContext        = input_context;
+    app.keyFIFO             = key_fifo;
     [app schedule_timer];
 }
 

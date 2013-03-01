@@ -19,10 +19,12 @@
 #ifndef MPV_MACOSX_APPLICATION
 #define MPV_MACOSX_APPLICATION
 
-#include "core/mp_core.h"
+#include "core/input/input.h"
+#include "core/mp_fifo.h"
 
 // Playloop callback function pointer
-typedef void(*play_loop_callback)(struct MPContext *);
+typedef void(*play_loop_callback)(void *);
+typedef int(*should_stop_callback)(void *);
 
 // Menu Keys identifing menu items
 typedef enum {
@@ -44,7 +46,10 @@ void cocoa_post_fake_event(void);
 
 // Adds play_loop as a timer of the Main Cocoa Event Loop
 void cocoa_run_loop_schedule(play_loop_callback callback,
-                             struct MPContext *context);
+                             should_stop_callback playback_stopped,
+                             void *context,
+                             struct input_ctx *input_context,
+                             struct mp_fifo *key_fifo);
 
 void macosx_finder_args_preinit(int *argc, char ***argv);
 #endif /* MPV_MACOSX_APPLICATION */
