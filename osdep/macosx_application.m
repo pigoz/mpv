@@ -18,8 +18,11 @@
 
 #include "talloc.h"
 
-#include "osdep/macosx_application_objc.h"
+#include "core/mp_fifo.h"
+#include "core/input/input.h"
 #include "core/input/keycodes.h"
+
+#include "osdep/macosx_application_objc.h"
 #include "video/out/osx_common.h"
 
 // 0.0001 seems too much and 0.01 too low, no idea why this works so well

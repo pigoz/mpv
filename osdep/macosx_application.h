@@ -19,8 +19,8 @@
 #ifndef MPV_MACOSX_APPLICATION
 #define MPV_MACOSX_APPLICATION
 
-#include "core/input/input.h"
-#include "core/mp_fifo.h"
+struct input_ctx;
+struct mp_fifo;
 
 // Playloop callback function pointer
 typedef void(*play_loop_callback)(void *);
@@ -53,4 +53,5 @@ void cocoa_run_loop_schedule(play_loop_callback callback,
                              struct mp_fifo *key_fifo);
 
 void macosx_finder_args_preinit(int *argc, char ***argv);
+
 #endif /* MPV_MACOSX_APPLICATION */
