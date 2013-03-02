@@ -251,6 +251,12 @@ void init_cocoa_application(void)
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 }
 
+void terminate_cocoa_application(void)
+{
+    [NSApp hide:app];
+    [NSApp terminate:app];
+}
+
 void cocoa_run_runloop(void)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];

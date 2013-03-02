@@ -39,6 +39,7 @@ void cocoa_register_menu_item_action(MPMenuKey key, void* action);
 
 // initializes Cocoa application
 void init_cocoa_application(void);
+void terminate_cocoa_application(void);
 
 // Runs the Cocoa Main Event Loop
 void cocoa_run_runloop(void);

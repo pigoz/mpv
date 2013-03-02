@@ -635,7 +635,14 @@ static MP_NORETURN void exit_player(struct MPContext *mpctx,
 
     talloc_free(mpctx);
 
+#ifdef CONFIG_COCOA
+    terminate_cocoa_application();
+    // never reach here:
+    // terminate calls exit itself, just silence compiler warning
+    exit(0);
+#else
     exit(rc);
+#endif
 }
 
 #include "cfg-mplayer.h"
