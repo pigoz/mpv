@@ -124,6 +124,7 @@ struct vo_cocoa_state {
     int vo_cursor_autohide_delay;
 
     bool did_resize;
+    bool did_async_resize;
     bool out_fs_resize;
 
     IOPMAssertionID power_mgmt_assertion;
@@ -140,6 +141,7 @@ static struct vo_cocoa_state *vo_cocoa_init_state(struct vo *vo)
     struct vo_cocoa_state *s = talloc_ptrtype(vo, s);
     *s = (struct vo_cocoa_state){
         .did_resize = NO,
+        .did_async_resize = NO,
         .current_video_size = {0,0},
         .previous_video_size = {0,0},
         .windowed_mask = NSTitledWindowMask|NSClosableWindowMask|
@@ -445,6 +447,7 @@ static void resize_redraw(struct vo *vo, int width, int height)
         [s->glContext update];
         s->resize_redraw(vo, width, height);
         [s->glContext flushBuffer];
+        s->did_async_resize = YES;
     }
 }
 
@@ -499,7 +502,11 @@ int vo_cocoa_config_window(struct vo *vo, uint32_t d_width,
 void vo_cocoa_swap_buffers(struct vo *vo)
 {
     struct vo_cocoa_state *s = vo->cocoa;
-    [s->glContext flushBuffer];
+    if (s->did_async_resize) {
+        s->did_async_resize = NO;
+    } else {
+        [s->glContext flushBuffer];
+    }
 }
 
 static void vo_cocoa_display_cursor(struct vo *vo, int requested_state)
