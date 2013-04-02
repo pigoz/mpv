@@ -85,16 +85,14 @@ static bool RightAltPressed(NSEvent *event)
     CFSTR("PreventUserIdleDisplaySleep")
 #endif
 
-@interface GLMPlayerWindow : NSWindow <NSWindowDelegate> {
-    struct vo *_vo;
-}
-- (void)setVideoOutput:(struct vo *)vo;
+@interface GLMPlayerWindow : NSWindow <NSWindowDelegate>
 - (BOOL)canBecomeKeyWindow;
 - (BOOL)canBecomeMainWindow;
 - (void)fullscreen;
 - (void)mouseEvent:(NSEvent *)theEvent;
 - (void)mulSize:(float)multiplier;
 - (void)setContentSize:(NSSize)newSize keepCentered:(BOOL)keepCentered;
+@property(nonatomic, assign) struct vo *videoOutput;
 @end
 
 @interface GLMPlayerOpenGLView : NSView
@@ -131,6 +129,8 @@ struct vo_cocoa_state {
     IOPMAssertionID power_mgmt_assertion;
 
     CGFloat accumulated_scroll;
+
+    void (*resize_redraw)(struct vo *vo, int w, int h);
 };
 
 static int _instances = 0;
@@ -235,6 +235,13 @@ void vo_cocoa_pause(struct vo *vo)
 void vo_cocoa_resume(struct vo *vo)
 {
     disable_power_management(vo);
+}
+
+void vo_cocoa_register_resize_callback(struct vo *vo,
+                                       void (*cb)(struct vo *vo, int w, int h))
+{
+    struct vo_cocoa_state *s = vo->cocoa;
+    s->resize_redraw = cb;
 }
 
 static int current_screen_has_dock_or_menubar(struct vo *vo)
@@ -401,7 +408,7 @@ static int create_window(struct vo *vo, uint32_t d_width, uint32_t d_height,
     [s->window setAcceptsMouseMovedEvents:YES];
     [s->glContext setView:glView];
     [s->glContext makeCurrentContext];
-    [s->window setVideoOutput:vo];
+    s->window.videoOutput = vo;
 
     [s->window setDelegate:s->window];
     [s->window makeMainWindow];
@@ -428,6 +435,16 @@ static void update_window(struct vo *vo)
                          keepCentered:YES];
             [s->window setContentAspectRatio:s->current_video_size];
         }
+    }
+}
+
+static void resize_redraw(struct vo *vo, int width, int height)
+{
+    struct vo_cocoa_state *s = vo->cocoa;
+    if (s->resize_redraw) {
+        [s->glContext update];
+        s->resize_redraw(vo, width, height);
+        [s->glContext flushBuffer];
     }
 }
 
@@ -565,26 +582,23 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 }
 
 @implementation GLMPlayerWindow
-- (void)setVideoOutput:(struct vo *)vo
-{
-    _vo = vo;
-}
+@synthesize videoOutput = _video_output;
 
 - (void)windowDidResize:(NSNotification *) notification
 {
-    if (_vo) {
-        struct vo_cocoa_state *s = _vo->cocoa;
+    if (self.videoOutput) {
+        struct vo_cocoa_state *s = self.videoOutput->cocoa;
         s->did_resize = YES;
     }
 }
 
 - (void)fullscreen
 {
-    struct vo_cocoa_state *s = _vo->cocoa;
-    struct mp_vo_opts *opts = _vo->opts;
+    struct vo_cocoa_state *s = self.videoOutput->cocoa;
+    struct mp_vo_opts *opts = self.videoOutput->opts;
     if (!opts->fs) {
-        update_screen_info(_vo);
-        if (current_screen_has_dock_or_menubar(_vo))
+        update_screen_info(self.videoOutput);
+        if (current_screen_has_dock_or_menubar(self.videoOutput))
             [NSApp setPresentationOptions:NSApplicationPresentationHideDock|
                 NSApplicationPresentationHideMenuBar];
         s->windowed_frame = [self frame];
@@ -592,7 +606,7 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
         [self setStyleMask:s->fullscreen_mask];
         [self setFrame:s->fsscreen_frame display:YES animate:NO];
         opts->fs = true;
-        vo_cocoa_display_cursor(_vo, 0);
+        vo_cocoa_display_cursor(self.videoOutput, 0);
         [self setMovableByWindowBackground: NO];
     } else {
         [NSApp setPresentationOptions:NSApplicationPresentationDefault];
@@ -606,7 +620,7 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
         }
         [self setContentAspectRatio:s->current_video_size];
         opts->fs = false;
-        vo_cocoa_display_cursor(_vo, 1);
+        vo_cocoa_display_cursor(self.videoOutput, 1);
         [self setMovableByWindowBackground: YES];
     }
 }
@@ -618,7 +632,7 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 - (BOOL)resignFirstResponder { return YES; }
 - (BOOL)windowShouldClose:(id)sender
 {
-    mplayer_put_key(_vo->key_fifo, MP_KEY_CLOSE_WIN);
+    mplayer_put_key(self.videoOutput->key_fifo, MP_KEY_CLOSE_WIN);
     // We have to wait for MPlayer to handle this,
     // otherwise we are in trouble if the
     // MP_KEY_CLOSE_WIN handler is disabled
@@ -629,8 +643,8 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 {
     // this is only valid as a starting value. it will be rewritten in the
     // -fullscreen method.
-    if (_vo) {
-        return !_vo->opts->fs;
+    if (self.videoOutput) {
+        return !self.videoOutput->opts->fs;
     } else {
         return NO;
     }
@@ -656,14 +670,14 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
             key |= MP_KEY_MODIFIER_ALT;
         if ([theEvent modifierFlags] & NSCommandKeyMask)
             key |= MP_KEY_MODIFIER_META;
-        mplayer_put_key(_vo->key_fifo, key);
+        mplayer_put_key(self.videoOutput->key_fifo, key);
     }
 }
 
 - (void)mouseMoved: (NSEvent *) theEvent
 {
-    if (_vo->opts->fs)
-        vo_cocoa_display_cursor(_vo, 1);
+    if (self.videoOutput->opts->fs)
+        vo_cocoa_display_cursor(self.videoOutput, 1);
 }
 
 - (void)mouseDragged:(NSEvent *)theEvent
@@ -703,7 +717,7 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 
 - (void)scrollWheel:(NSEvent *)theEvent
 {
-    struct vo_cocoa_state *s = _vo->cocoa;
+    struct vo_cocoa_state *s = self.videoOutput->cocoa;
 
     CGFloat delta;
     // Use the dimention with the most delta as the scrolling one
@@ -719,17 +733,17 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
         static const CGFloat threshold = 10;
         while (s->accumulated_scroll >= threshold) {
             s->accumulated_scroll -= threshold;
-            mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN3);
+            mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN3);
         }
         while (s->accumulated_scroll <= -threshold) {
             s->accumulated_scroll += threshold;
-            mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN4);
+            mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN4);
         }
     } else {
         if (delta > 0)
-            mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN3);
+            mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN3);
         else
-            mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN4);
+            mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN4);
     }
 }
 
@@ -744,18 +758,18 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
             case NSLeftMouseDown:
             case NSRightMouseDown:
             case NSOtherMouseDown:
-                mplayer_put_key(_vo->key_fifo,
+                mplayer_put_key(self.videoOutput->key_fifo,
                                 (MP_MOUSE_BTN0 + buttonNumber) | MP_KEY_STATE_DOWN);
                 // Looks like Cocoa doesn't create MouseUp events when we are
                 // doing the second click in a double click. Put in the key_fifo
                 // the key that would be put from the MouseUp handling code.
                 if([theEvent clickCount] == 2)
-                   mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN0 + buttonNumber);
+                   mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN0 + buttonNumber);
                 break;
             case NSLeftMouseUp:
             case NSRightMouseUp:
             case NSOtherMouseUp:
-                mplayer_put_key(_vo->key_fifo, MP_MOUSE_BTN0 + buttonNumber);
+                mplayer_put_key(self.videoOutput->key_fifo, MP_MOUSE_BTN0 + buttonNumber);
                 break;
         }
     }
@@ -769,10 +783,10 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 
 - (void)mulSize:(float)multiplier
 {
-    if (!_vo->opts->fs) {
+    if (!self.videoOutput->opts->fs) {
         NSSize size = {
-            .width  = _vo->aspdat.prew * multiplier,
-            .height = _vo->aspdat.preh * multiplier
+            .width  = self.videoOutput->aspdat.prew * multiplier,
+            .height = self.videoOutput->aspdat.preh * multiplier
         };
         [self setContentSize:size keepCentered:YES];
     }
@@ -822,7 +836,21 @@ int vo_cocoa_cgl_color_size(struct vo *vo)
 @implementation GLMPlayerOpenGLView
 - (void)drawRect: (NSRect)rect
 {
-    [[NSColor clearColor] set];
-    NSRectFill([self bounds]);
+    GLMPlayerWindow * window = (GLMPlayerWindow *)[self window];
+    struct vo *vo = [window videoOutput];
+    if (vo) {
+        NSRect frame;
+
+        if (supports_hidpi(self)) {
+            frame = [self convertRectToBacking: [self frame]];
+        } else {
+            frame = [self frame];
+        }
+
+        resize_redraw(vo, frame.size.width, frame.size.height);
+    } else {
+        [[NSColor clearColor] set];
+        NSRectFill([self bounds]);
+    }
 }
 @end

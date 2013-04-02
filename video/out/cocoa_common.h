@@ -44,6 +44,9 @@ void vo_cocoa_ontop(struct vo *vo);
 void vo_cocoa_pause(struct vo *vo);
 void vo_cocoa_resume(struct vo *vo);
 
+void vo_cocoa_register_resize_callback(struct vo *vo,
+                                       void (*cb)(struct vo *vo, int w, int h));
+
 // returns an int to conform to the gl extensions from other platforms
 int vo_cocoa_swap_interval(int enabled);
 

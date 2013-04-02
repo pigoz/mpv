@@ -60,6 +60,7 @@ void mpgl_set_backend_cocoa(MPGLContext *ctx)
     ctx->update_xinerama_info = vo_cocoa_update_xinerama_info;
     ctx->fullscreen = vo_cocoa_fullscreen;
     ctx->ontop = vo_cocoa_ontop;
+    ctx->register_resize_callback = vo_cocoa_register_resize_callback;
     ctx->vo_init = vo_cocoa_init;
     ctx->pause = vo_cocoa_pause;
     ctx->resume = vo_cocoa_resume;

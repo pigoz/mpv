@@ -340,6 +340,12 @@ static void uninit(struct vo *vo)
     }
 }
 
+static void video_resize_redraw_callback(struct vo *vo, int w, int h)
+{
+    struct gl_priv *p = vo->priv;
+    gl_video_resize_redraw(p->renderer, w, h);
+}
+
 static int preinit(struct vo *vo, const char *arg)
 {
     struct gl_priv *p = vo->priv;
@@ -349,6 +355,10 @@ static int preinit(struct vo *vo, const char *arg)
     if (!p->glctx)
         goto err_out;
     p->gl = p->glctx->gl;
+
+    if (p->glctx->register_resize_callback) {
+        p->glctx->register_resize_callback(vo, video_resize_redraw_callback);
+    }
 
     if (!config_window(p, 320, 200, VOFLAG_HIDDEN))
         goto err_out;
