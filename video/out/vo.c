@@ -558,7 +558,8 @@ static bool render_frame(struct vo *vo)
     in->frame_queued = NULL;
 
     // The next time a flip (probably) happens.
-    int64_t next_vsync = prev_sync(vo, mp_time_us()) + in->vsync_interval;
+    int64_t prev_vsync = prev_sync(vo, mp_time_us());
+    int64_t next_vsync = prev_vsync + in->vsync_interval;
     int64_t end_time = pts + duration;
 
     if (!(vo->global->opts->frame_dropping & 1) || !in->hasframe_rendered ||
@@ -580,7 +581,13 @@ static bool render_frame(struct vo *vo)
 
         MP_STATS(vo, "start video");
 
-        vo->driver->draw_image(vo, img);
+        if (vo->driver->draw_image_timed)
+            // pass down the previous vsync so that we don't have to properly
+            // queue frames before it's needed.
+            // XXX: must adjust audio timing by in->vsync_interval
+            vo->driver->draw_image_timed(vo, img, pts, prev_vsync);
+        else
+            vo->driver->draw_image(vo, img);
 
         int64_t target = pts - in->flip_queue_offset;
         while (1) {

@@ -367,7 +367,13 @@ void main() {
 #ifndef USE_CONV
 #define USE_CONV 0
 #endif
-#if USE_CONV == CONV_PLANAR
+#ifndef USE_BLENDING
+#define USE_BLENDING 0
+#endif
+#if USE_BLENDING == 1
+    vec4 acolor = mix(texture(texture0, texcoord), texture(texture1, texcoord), 0.5);
+    //vec4 acolor = vec4(0.5);
+#elif USE_CONV == CONV_PLANAR
     vec4 acolor = vec4(SAMPLE_L(texture0, textures_size[0], texcoord).r,
                        SAMPLE_C(texture1, textures_size[1], chr_texcoord).r,
                        SAMPLE_C(texture2, textures_size[2], chr_texcoord).r,

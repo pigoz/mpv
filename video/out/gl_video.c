@@ -39,6 +39,10 @@
 #include "bitmap_packer.h"
 #include "dither.h"
 
+#define WRAP_ADD(x, a, m) ((a) < 0 \
+                           ? ((x)+(a)+(m) < (m) ? (x)+(a)+(m) : (x)+(a)) \
+                           : ((x)+(a) < (m) ? (x)+(a) : (x)+(a)-(m)))
+
 static const char vo_opengl_shaders[] =
 // Generated from gl_video_shaders.glsl
 #include "video/out/gl_video_shaders.h"
@@ -136,6 +140,13 @@ struct fbotex {
     int vp_x, vp_y, vp_w, vp_h; // viewport of fbo / used part of the texture
 };
 
+struct fbosurface {
+    struct fbotex fbotex;
+    int64_t pts;
+};
+
+#define FBO_MAX_SURFACES 2
+
 struct gl_video {
     GL *gl;
 
@@ -151,7 +162,8 @@ struct gl_video {
     GLuint vao;
 
     GLuint osd_programs[SUBBITMAP_COUNT];
-    GLuint indirect_program, scale_sep_program, final_program;
+    GLuint indirect_program, scale_sep_program, final_program,
+           blend_program;
 
     struct osd_state *osd_state;
     struct mpgl_osd *osd;
@@ -190,6 +202,8 @@ struct gl_video {
 
     struct fbotex indirect_fbo;         // RGB target
     struct fbotex scale_sep_fbo;        // first pass when doing 2 pass scaling
+    struct fbosurface surfaces[FBO_MAX_SURFACES];
+    int surface_num;
 
     // state for luma (0) and chroma (1) scalers
     struct scaler scalers[2];
@@ -536,6 +550,23 @@ static void fbotex_uninit(struct gl_video *p, struct fbotex *fbo)
     }
 }
 
+static void surfaces_init(struct gl_video *p, struct fbosurface *surfaces,
+                          int w, int h, GLenum iformat)
+{
+
+    for (int i = 0; i < FBO_MAX_SURFACES; i++)
+        if (!surfaces[i].fbotex.fbo)
+            fbotex_init(p, &surfaces[i].fbotex, w, h, iformat);
+}
+
+static void surfaces_uninit(struct gl_video *p, struct fbosurface *surfaces)
+{
+
+    for (int i = 0; i < FBO_MAX_SURFACES; i++)
+        if (surfaces[i].fbotex.fbo)
+            fbotex_uninit(p, &surfaces[i].fbotex);
+}
+
 static void matrix_ortho2d(float m[3][3], float x0, float x1,
                            float y0, float y1)
 {
@@ -702,6 +733,7 @@ static void update_all_uniforms(struct gl_video *p)
     update_uniforms(p, p->indirect_program);
     update_uniforms(p, p->scale_sep_program);
     update_uniforms(p, p->final_program);
+    update_uniforms(p, p->blend_program);
 }
 
 #define SECTION_HEADER "#!section "
@@ -960,6 +992,7 @@ static void compile_shaders(struct gl_video *p)
 
     char *header_conv = talloc_strdup(tmp, "");
     char *header_final = talloc_strdup(tmp, "");
+    char *header_blend = talloc_strdup(tmp, "");
     char *header_sep = NULL;
 
     if (p->image_desc.id == IMGFMT_NV12 || p->image_desc.id == IMGFMT_NV21) {
@@ -1006,6 +1039,8 @@ static void compile_shaders(struct gl_video *p)
     } else {
         shader_setup_scaler(&header_final, &p->scalers[0], -1);
     }
+
+    shader_def_opt(&header_blend, "USE_BLENDING", 1);
 
     // We want to do scaling in linear light. Scaling is closely connected to
     // texture sampling due to how the shader is structured (or if GL bilinear
@@ -1064,6 +1099,10 @@ static void compile_shaders(struct gl_video *p)
     p->final_program =
         create_program(p, "final", header_final, vertex_shader, s_video);
 
+    header_blend = t_concat(tmp, header, header_blend);
+    p->blend_program =
+        create_program(p, "blend", header_blend, vertex_shader, s_video);
+
     debug_check_gl(p, "shader compilation");
 
     talloc_free(tmp);
@@ -1084,6 +1123,7 @@ static void delete_shaders(struct gl_video *p)
     delete_program(gl, &p->indirect_program);
     delete_program(gl, &p->scale_sep_program);
     delete_program(gl, &p->final_program);
+    delete_program(gl, &p->blend_program);
 }
 
 static double get_scale_factor(struct gl_video *p)
@@ -1294,6 +1334,8 @@ static void reinit_rendering(struct gl_video *p)
     if (p->indirect_program && !p->indirect_fbo.fbo)
         fbotex_init(p, &p->indirect_fbo, w, h, p->opts.fbo_format);
 
+    surfaces_init(p, p->surfaces, w, h, p->opts.fbo_format);
+
     recreate_osd(p);
 }
 
@@ -1497,6 +1539,7 @@ static void uninit_video(struct gl_video *p)
 
     fbotex_uninit(p, &p->indirect_fbo);
     fbotex_uninit(p, &p->scale_sep_fbo);
+    surfaces_uninit(p, p->surfaces);
 }
 
 static void change_dither_trafo(struct gl_video *p)
@@ -1603,7 +1646,8 @@ static void handle_pass(struct gl_video *p, struct pass *chain,
     };
 }
 
-void gl_video_render_frame(struct gl_video *p)
+void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
+                           int64_t next_vsync)
 {
     GL *gl = p->gl;
     struct video_image *vimg = &p->image;
@@ -1670,7 +1714,50 @@ void gl_video_render_frame(struct gl_video *p)
                 | (vimg->image_flipped ? 4 : 0);
     chain.render_stereo = true;
 
-    handle_pass(p, &chain, &screen, p->final_program);
+    p->surfaces[p->surface_num].pts = frame_pts;
+    handle_pass(p, &chain, &p->surfaces[p->surface_num].fbotex, p->final_program);
+
+    GLuint imgtexsurfaces[4] = {0};
+    gl->ActiveTexture(GL_TEXTURE0 + 0);
+    gl->BindTexture(p->gl_target, p->surfaces[p->surface_num].fbotex.texture);
+    imgtexsurfaces[0] = p->surfaces[p->surface_num].fbotex.texture;
+    p->surface_num = WRAP_ADD(p->surface_num, 1, FBO_MAX_SURFACES);
+
+    double mix = 1.0;
+    if (p->surfaces[p->surface_num].fbotex.fbo) {
+        // previous frame is initialized
+        imgtexsurfaces[1] = p->surfaces[p->surface_num].fbotex.texture;
+        gl->ActiveTexture(GL_TEXTURE0 + 1);
+        gl->BindTexture(p->gl_target, p->surfaces[p->surface_num].fbotex.texture);
+        int64_t prev_pts = p->surfaces[p->surface_num].pts;
+        double V = next_vsync - prev_pts;
+        double F = frame_pts  - prev_pts;
+        mix = V / F;
+
+        MP_ERR(p, "prev_pts: %lld | vsync: %lld | pts: %lld | 1: %f 2: %f | mix: %f\n",
+               prev_pts, next_vsync, frame_pts, V, F, mix);
+    }
+
+    gl->ActiveTexture(GL_TEXTURE0);
+
+    struct pass chain2 = {
+        .f = {
+            .vp_w = p->image_w,
+            .vp_h = p->image_h,
+            .tex_w = p->texture_w,
+            .tex_h = p->texture_h,
+            .texture = imgtexsurfaces[0],
+        },
+    };
+
+    //chain2.f.vp_x = p->src_rect_rot.x0;
+    //chain2.f.vp_w = p->src_rect_rot.x1 - p->src_rect_rot.x0;
+    chain2.use_dst = true;
+    chain2.dst = p->dst_rect;
+    //chain2.flags = (p->image_params.rotate % 90 ? 0 : p->image_params.rotate / 90)
+    //            | (vimg->image_flipped ? 4 : 0);
+
+    handle_pass(p, &chain2, &screen, p->blend_program);
 
     gl->UseProgram(0);
     gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2441,7 +2528,7 @@ void gl_video_resize_redraw(struct gl_video *p, int w, int h)
     p->gl->Viewport(p->vp_x, p->vp_y, w, h);
     p->vp_w = w;
     p->vp_h = h;
-    gl_video_render_frame(p);
+    gl_video_render_frame(p, -1, -1);
 }
 
 void gl_video_set_hwdec(struct gl_video *p, struct gl_hwdec *hwdec)

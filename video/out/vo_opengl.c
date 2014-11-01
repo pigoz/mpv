@@ -153,7 +153,8 @@ static void flip_page(struct vo *vo)
     mpgl_unlock(p->glctx);
 }
 
-static void draw_image(struct vo *vo, mp_image_t *mpi)
+static void draw_image(struct vo *vo, mp_image_t *mpi,
+                       int64_t frame_pts, int64_t next_vsync)
 {
     struct gl_priv *p = vo->priv;
     GL *gl = p->gl;
@@ -164,7 +165,7 @@ static void draw_image(struct vo *vo, mp_image_t *mpi)
     mpgl_lock(p->glctx);
 
     gl_video_upload_image(p->renderer, mpi);
-    gl_video_render_frame(p->renderer);
+    gl_video_render_frame(p->renderer, frame_pts, next_vsync);
 
     // The playloop calls this last before waiting some time until it decides
     // to call flip_page(). Tell OpenGL to start execution of the GPU commands
@@ -419,7 +420,7 @@ static int control(struct vo *vo, uint32_t request, void *data)
         return true;
     case VOCTRL_REDRAW_FRAME:
         mpgl_lock(p->glctx);
-        gl_video_render_frame(p->renderer);
+        gl_video_render_frame(p->renderer, -1, -1);
         mpgl_unlock(p->glctx);
         return true;
     case VOCTRL_SET_COMMAND_LINE: {
@@ -519,7 +520,7 @@ const struct vo_driver video_out_opengl = {
     .query_format = query_format,
     .reconfig = reconfig,
     .control = control,
-    .draw_image = draw_image,
+    .draw_image_timed = draw_image,
     .flip_page = flip_page,
     .uninit = uninit,
     .priv_size = sizeof(struct gl_priv),
@@ -534,7 +535,7 @@ const struct vo_driver video_out_opengl_hq = {
     .query_format = query_format,
     .reconfig = reconfig,
     .control = control,
-    .draw_image = draw_image,
+    .draw_image_timed = draw_image,
     .flip_page = flip_page,
     .uninit = uninit,
     .priv_size = sizeof(struct gl_priv),
