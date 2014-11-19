@@ -162,6 +162,7 @@ uniform float dither_center;
 uniform float filter_param1_l;
 uniform float filter_param1_c;
 uniform vec2 dither_size;
+uniform float blend_coeff;
 
 in vec2 texcoord;
 DECLARE_FRAGPARMS
@@ -371,7 +372,9 @@ void main() {
 #define USE_BLENDING 0
 #endif
 #if USE_BLENDING == 1
-    vec4 acolor = mix(texture(texture0, texcoord), texture(texture1, texcoord), 0.5);
+    vec4 acolor = mix(texture(texture0, chr_texcoord),
+                      texture(texture1, chr_texcoord),
+                      blend_coeff);
     //vec4 acolor = vec4(0.5);
 #elif USE_CONV == CONV_PLANAR
     vec4 acolor = vec4(SAMPLE_L(texture0, textures_size[0], texcoord).r,

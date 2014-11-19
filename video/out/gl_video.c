@@ -1736,6 +1736,11 @@ void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
 
         MP_ERR(p, "prev_pts: %lld | vsync: %lld | pts: %lld | 1: %f 2: %f | mix: %f\n",
                prev_pts, next_vsync, frame_pts, V, F, mix);
+
+        GLint loc = gl->GetUniformLocation(p->blend_program, "blend_coeff");
+        if (loc >= 0) {
+            gl->Uniform1f(loc, mix);
+        }
     }
 
     gl->ActiveTexture(GL_TEXTURE0);
@@ -1750,12 +1755,9 @@ void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
         },
     };
 
-    //chain2.f.vp_x = p->src_rect_rot.x0;
-    //chain2.f.vp_w = p->src_rect_rot.x1 - p->src_rect_rot.x0;
     chain2.use_dst = true;
     chain2.dst = p->dst_rect;
-    //chain2.flags = (p->image_params.rotate % 90 ? 0 : p->image_params.rotate / 90)
-    //            | (vimg->image_flipped ? 4 : 0);
+    chain2.flags = (1 << 2); // XXX: needs flit for some reason
 
     handle_pass(p, &chain2, &screen, p->blend_program);
 
