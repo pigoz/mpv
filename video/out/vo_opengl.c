@@ -159,12 +159,12 @@ static void draw_image(struct vo *vo, mp_image_t *mpi,
     struct gl_priv *p = vo->priv;
     GL *gl = p->gl;
 
-    if (p->vo_flipped)
+    if (p->vo_flipped && mpi)
         mp_image_vflip(mpi);
 
     mpgl_lock(p->glctx);
 
-    gl_video_upload_image(p->renderer, mpi);
+    if (mpi) gl_video_upload_image(p->renderer, mpi);
     gl_video_render_frame(p->renderer, frame_pts, next_vsync);
 
     // The playloop calls this last before waiting some time until it decides

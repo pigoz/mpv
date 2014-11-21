@@ -145,7 +145,7 @@ struct fbosurface {
     int64_t pts;
 };
 
-#define FBO_MAX_SURFACES 2
+#define FBO_MAX_SURFACES 5
 
 struct gl_video {
     GL *gl;

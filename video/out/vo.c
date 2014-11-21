@@ -509,7 +509,8 @@ void vo_queue_frame(struct vo *vo, struct mp_image *image,
     in->frame_queued = image;
     in->frame_pts = pts_us;
     in->frame_duration = duration;
-    in->wakeup_pts = in->frame_pts + MPMAX(duration, 0);
+    // in->wakeup_pts = in->frame_pts + MPMAX(duration, 0);
+    in->wakeup_pts = mp_time_us();
     wakeup_locked(vo);
     pthread_mutex_unlock(&in->lock);
 }
@@ -547,10 +548,10 @@ static bool render_frame(struct vo *vo)
     int64_t pts = in->frame_pts;
     int64_t duration = in->frame_duration;
     struct mp_image *img = in->frame_queued;
-    if (!img) {
-        pthread_mutex_unlock(&in->lock);
-        return false;
-    }
+    // if (!img) {
+    //     pthread_mutex_unlock(&in->lock);
+    //     return false;
+    // }
 
     mp_image_unrefp(&in->dropped_image);
 
@@ -558,7 +559,7 @@ static bool render_frame(struct vo *vo)
     in->frame_queued = NULL;
 
     // The next time a flip (probably) happens.
-    int64_t prev_vsync = prev_sync(vo, mp_time_us());
+    int64_t prev_vsync = prev_sync(vo, mp_time_us()) - 30e3 ;
     int64_t next_vsync = prev_vsync + in->vsync_interval;
     int64_t end_time = pts + duration;
 
@@ -693,7 +694,8 @@ static void *vo_thread(void *ptr)
         pthread_mutex_lock(&in->lock);
         if (in->wakeup_pts) {
             if (in->wakeup_pts > now) {
-                wait_until = MPMIN(wait_until, in->wakeup_pts);
+                // wait_until = MPMIN(wait_until, in->wakeup_pts);
+                wait_until = mp_time_us();
             } else {
                 in->wakeup_pts = 0;
                 mp_input_wakeup(vo->input_ctx);
