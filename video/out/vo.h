@@ -207,7 +207,8 @@ struct vo_driver {
     void (*draw_image)(struct vo *vo, struct mp_image *mpi);
 
     void (*draw_image_timed)(struct vo *vo, struct mp_image *mpi,
-                             int64_t frame_pts, int64_t next_vsync);
+                             int64_t frame_pts, int64_t prev_vsync,
+                             int64_t next_vsync);
 
     /*
      * Blit/Flip buffer to the screen. Must be called after each frame!

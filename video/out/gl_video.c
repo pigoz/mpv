@@ -145,7 +145,7 @@ struct fbosurface {
     int64_t pts;
 };
 
-#define FBO_MAX_SURFACES 5
+#define FBO_MAX_SURFACES 2
 
 struct gl_video {
     GL *gl;
@@ -1647,7 +1647,7 @@ static void handle_pass(struct gl_video *p, struct pass *chain,
 }
 
 void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
-                           int64_t next_vsync)
+                           int64_t prev_vsync, int64_t next_vsync)
 {
     GL *gl = p->gl;
     struct video_image *vimg = &p->image;
@@ -1724,24 +1724,33 @@ void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
     p->surface_num = WRAP_ADD(p->surface_num, 1, FBO_MAX_SURFACES);
 
     double mix = 1.0;
-    if (p->surfaces[p->surface_num].fbotex.fbo) {
-        // previous frame is initialized
-        imgtexsurfaces[1] = p->surfaces[p->surface_num].fbotex.texture;
-        gl->ActiveTexture(GL_TEXTURE0 + 1);
-        gl->BindTexture(p->gl_target, p->surfaces[p->surface_num].fbotex.texture);
-        int64_t prev_pts = p->surfaces[p->surface_num].pts;
-        double V = next_vsync - prev_pts;
-        double F = frame_pts  - prev_pts;
-        mix = V / F;
-
-        MP_ERR(p, "prev_pts: %lld | vsync: %lld | pts: %lld | 1: %f 2: %f | mix: %f\n",
-               prev_pts, next_vsync, frame_pts, V, F, mix);
-
-        GLint loc = gl->GetUniformLocation(p->blend_program, "blend_coeff");
-        if (loc >= 0) {
-            gl->Uniform1f(loc, mix);
-        }
+    if (frame_pts > prev_vsync && frame_pts < next_vsync) {
+        // this is an inbetween frame, blend with the previous one
+        MP_ERR(p, "blended frame p_vsync: %lld, pts: %lld, n_vsync: %lld\n",
+               prev_vsync, frame_pts, next_vsync);
+    } else {
+        MP_ERR(p, "normal frame p_vsync: %lld, pts: %lld, n_vsync: %lld\n",
+               prev_vsync, frame_pts, next_vsync);
     }
+
+    GLint loc = gl->GetUniformLocation(p->blend_program, "blend_coeff");
+    if (loc >= 0) {
+        gl->Uniform1f(loc, mix);
+    }
+
+    // if (p->surfaces[p->surface_num].fbotex.fbo) {
+    //     // previous frame is initialized
+    //     imgtexsurfaces[1] = p->surfaces[p->surface_num].fbotex.texture;
+    //     gl->ActiveTexture(GL_TEXTURE0 + 1);
+    //     gl->BindTexture(p->gl_target, p->surfaces[p->surface_num].fbotex.texture);
+    //     int64_t prev_pts = p->surfaces[p->surface_num].pts;
+    //     double V = next_vsync - prev_pts;
+    //     double F = frame_pts  - prev_pts;
+    //     mix = V / F;
+
+    //     MP_ERR(p, "prev_pts: %lld | vsync: %lld | pts: %lld | 1: %f 2: %f | mix: %f\n",
+    //            prev_pts, next_vsync, frame_pts, V, F, mix);
+    // }
 
     gl->ActiveTexture(GL_TEXTURE0);
 
@@ -1759,7 +1768,7 @@ void gl_video_render_frame(struct gl_video *p, int64_t frame_pts,
     chain2.dst = p->dst_rect;
     chain2.flags = (1 << 2); // XXX: needs flit for some reason
 
-    handle_pass(p, &chain2, &screen, p->blend_program);
+    // handle_pass(p, &chain2, &screen, p->blend_program);
 
     gl->UseProgram(0);
     gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2530,7 +2539,7 @@ void gl_video_resize_redraw(struct gl_video *p, int w, int h)
     p->gl->Viewport(p->vp_x, p->vp_y, w, h);
     p->vp_w = w;
     p->vp_h = h;
-    gl_video_render_frame(p, -1, -1);
+    gl_video_render_frame(p, -1, -1, -1);
 }
 
 void gl_video_set_hwdec(struct gl_video *p, struct gl_hwdec *hwdec)

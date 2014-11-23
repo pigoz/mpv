@@ -559,7 +559,7 @@ static bool render_frame(struct vo *vo)
     in->frame_queued = NULL;
 
     // The next time a flip (probably) happens.
-    int64_t prev_vsync = prev_sync(vo, mp_time_us()) - 30e3 ;
+    int64_t prev_vsync = prev_sync(vo, mp_time_us());
     int64_t next_vsync = prev_vsync + in->vsync_interval;
     int64_t end_time = pts + duration;
 
@@ -586,7 +586,7 @@ static bool render_frame(struct vo *vo)
             // pass down the previous vsync so that we don't have to properly
             // queue frames before it's needed.
             // XXX: must adjust audio timing by in->vsync_interval
-            vo->driver->draw_image_timed(vo, img, pts, prev_vsync);
+            vo->driver->draw_image_timed(vo, img, pts, prev_vsync, next_vsync);
         else
             vo->driver->draw_image(vo, img);
 
@@ -610,6 +610,8 @@ static bool render_frame(struct vo *vo)
 
         if (in->last_flip < 0)
             in->last_flip = mp_time_us();
+
+        MP_ERR(vo, "last flip: %lld, interval %lld\n", in->last_flip, in->vsync_interval);
 
         long phase = in->last_flip % in->vsync_interval;
         MP_DBG(vo, "phase: %ld\n", phase);
