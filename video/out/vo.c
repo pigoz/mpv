@@ -485,7 +485,7 @@ bool vo_is_ready_for_frame(struct vo *vo, int64_t next_pts)
         // Don't show the frame too early - it would basically freeze the
         // display by disallowing OSD redrawing or VO interaction.
         // Actually render the frame at earliest 50ms before target time.
-        next_pts -= 0.050 * 1e6;
+        next_pts -= in->vsync_timed ? in->vsync_interval * 2 : (0.050 * 1e6);
         next_pts -= in->flip_queue_offset;
         int64_t now = mp_time_us();
         if (next_pts > now)
