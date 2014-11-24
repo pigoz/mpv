@@ -712,6 +712,9 @@ int vo_cocoa_control(struct vo *vo, int *events, int request, void *arg)
     case VOCTRL_GET_ICC_PROFILE_PATH:
         vo_cocoa_control_get_icc_profile_path(vo, arg);
         return VO_TRUE;
+    case VOCTRL_GET_DISPLAY_FPS:
+        *(double *)arg = 60.0; // XXX: get this correctly
+        return VO_TRUE;
     }
     return VO_NOTIMPL;
 }
