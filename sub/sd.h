@@ -40,6 +40,8 @@ struct sd_functions {
     void (*get_bitmaps)(struct sd *sd, struct mp_osd_res dim, int format,
                         double pts, struct sub_bitmaps *res);
     char *(*get_text)(struct sd *sd, double pts);
+    double (*get_start)(struct sd *sd, double pts);
+    double (*get_end)(struct sd *sd, double pts);
 };
 
 struct lavc_conv;

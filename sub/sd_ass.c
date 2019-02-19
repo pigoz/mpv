@@ -587,6 +587,46 @@ static char *get_text(struct sd *sd, double pts)
     return ctx->last_text;
 }
 
+static double get_start(struct sd *sd, double pts)
+{
+    struct sd_ass_priv *ctx = sd->priv;
+    ASS_Track *track = ctx->ass_track;
+
+    if (pts == MP_NOPTS_VALUE)
+        return MP_NOPTS_VALUE;
+
+    long long ipts = find_timestamp(sd, pts);
+
+    for (int i = 0; i < track->n_events; ++i) {
+        ASS_Event *event = track->events + i;
+        if (ipts >= event->Start && ipts < event->Start + event->Duration) {
+            return event->Start / (double)1000;
+        }
+    }
+
+    return MP_NOPTS_VALUE;
+}
+
+static double get_end(struct sd *sd, double pts)
+{
+    struct sd_ass_priv *ctx = sd->priv;
+    ASS_Track *track = ctx->ass_track;
+
+    if (pts == MP_NOPTS_VALUE)
+        return MP_NOPTS_VALUE;
+
+    long long ipts = find_timestamp(sd, pts);
+
+    for (int i = 0; i < track->n_events; ++i) {
+        ASS_Event *event = track->events + i;
+        if (ipts >= event->Start && ipts < event->Start + event->Duration) {
+            return (event->Start + event->Duration) / (double)1000;
+        }
+    }
+
+    return MP_NOPTS_VALUE;
+}
+
 static void fill_plaintext(struct sd *sd, double pts)
 {
     struct sd_ass_priv *ctx = sd->priv;
@@ -681,6 +721,8 @@ const struct sd_functions sd_ass = {
     .decode = decode,
     .get_bitmaps = get_bitmaps,
     .get_text = get_text,
+    .get_start = get_start,
+    .get_end = get_end,
     .control = control,
     .reset = reset,
     .select = enable_output,

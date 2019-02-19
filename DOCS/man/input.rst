@@ -1682,6 +1682,12 @@ Property list
 
     This property is experimental and might be removed in the future.
 
+``sub-start``
+    Return the current subtitle start time.
+
+``sub-end``
+    Return the current subtitle end time.
+
 ``tv-brightness``, ``tv-contrast``, ``tv-saturation``, ``tv-hue`` (RW)
     TV stuff.
 

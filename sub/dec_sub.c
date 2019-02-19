@@ -351,6 +351,43 @@ char *sub_get_text(struct dec_sub *sub, double pts)
     return text;
 }
 
+double sub_get_start(struct dec_sub *sub, double pts)
+{
+    pthread_mutex_lock(&sub->lock);
+    struct mp_subtitle_opts *opts = sub->opts;
+    double res = MP_NOPTS_VALUE;
+
+    pts = pts_to_subtitle(sub, pts);
+
+    sub->last_vo_pts = pts;
+    update_segment(sub);
+    res = sub->start;
+
+    if (opts->sub_visibility && sub->sd->driver->get_text)
+        res = sub->sd->driver->get_start(sub->sd, pts);
+
+    pthread_mutex_unlock(&sub->lock);
+    return res;
+}
+
+double sub_get_end(struct dec_sub *sub, double pts)
+{
+    pthread_mutex_lock(&sub->lock);
+    struct mp_subtitle_opts *opts = sub->opts;
+    double res = MP_NOPTS_VALUE;
+
+    pts = pts_to_subtitle(sub, pts);
+
+    sub->last_vo_pts = pts;
+    update_segment(sub);
+
+    if (opts->sub_visibility && sub->sd->driver->get_text)
+        res = sub->sd->driver->get_end(sub->sd, pts);
+
+    pthread_mutex_unlock(&sub->lock);
+    return res;
+}
+
 void sub_reset(struct dec_sub *sub)
 {
     pthread_mutex_lock(&sub->lock);
