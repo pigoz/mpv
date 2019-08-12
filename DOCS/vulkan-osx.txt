@@ -1,0 +1,28 @@
+- probably not needed?
+- download shaderc from: https://github.com/google/shaderc#downloads
+$ cp -R install/* /usr/local
+
+- download and vulkan-sdk: https://vulkan.lunarg.com/sdk/home
+$ ./vulkansdk-macos-1.1.114.0/install_vulkan.py
+
+add pc file
+
+pigoz@NAVi /usr/local/lib/pkgconfig » cat vulkan.pc
+```
+libdir=/Users/pigoz/Downloads/vulkansdk-macos-1.1.114.0/MoltenVK/macOS/dynamic
+includedir=/Users/pigoz/Downloads/vulkansdk-macos-1.1.114.0/MoltenVK/include
+
+Name: vulkan
+Description: Vulkan MoltenVK
+Version: 1.0.0
+Libs: -L${libdir} -llibMoltenVK
+Libs.private: -lm
+Cflags: -I${includedir}
+```
+
+$ git clone git@github.com:haasn/libplacebo.git
+$ cd libplacebo
+$ DIR=./build
+$ meson $DIR
+$ ninja -C$DIR
+$ ninja install

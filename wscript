@@ -835,11 +835,16 @@ video_output_features = [
         'name': '--vulkan',
         'desc':  'Vulkan context support',
         'deps': 'libplacebo',
-        'func': check_pkg_config('vulkan'),
+        'func': check_pkg_config('vulkan')
     }, {
         'name': 'vaapi-vulkan',
         'desc': 'VAAPI Vulkan',
         'deps': 'vaapi && vulkan',
+        'func': check_true,
+    }, {
+        'name': 'cocoa-vulkan',
+        'desc': 'Cocoa Vulkan',
+        'deps': 'cocoa && swift && vulkan',
         'func': check_true,
     }, {
         'name': 'egl-helpers',
