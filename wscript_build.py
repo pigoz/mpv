@@ -504,6 +504,7 @@ def build(ctx):
         ( "video/out/vulkan/context_wayland.c",  "vulkan && wayland" ),
         ( "video/out/vulkan/context_win.c",      "vulkan && win32-desktop" ),
         ( "video/out/vulkan/context_xlib.c",     "vulkan && x11" ),
+        ( "video/out/vulkan/context_cocoa.c",    "vulkan && cocoa" ),
         ( "video/out/vulkan/utils.c",            "vulkan" ),
         ( "video/out/w32_common.c",              "win32-desktop" ),
         ( "video/out/wayland/idle-inhibit-v1.c", "wayland" ),

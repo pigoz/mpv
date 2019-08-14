@@ -842,11 +842,6 @@ video_output_features = [
         'deps': 'vaapi && vulkan',
         'func': check_true,
     }, {
-        'name': 'cocoa-vulkan',
-        'desc': 'Cocoa Vulkan',
-        'deps': 'cocoa && swift && vulkan',
-        'func': check_true,
-    }, {
         'name': 'egl-helpers',
         'desc': 'EGL helper functions',
         'deps': 'egl-x11 || mali-fbdev || rpi || gl-wayland || egl-drm || ' +

@@ -24,7 +24,7 @@
 #include <mach/mach.h>
 
 #import "cocoa_common.h"
-#import "video/out/cocoa/window.h"
+#import "video/out/cocoa/window.h",
 #import "video/out/cocoa/events_view.h"
 #import "video/out/cocoa/video_view.h"
 #import "video/out/cocoa/mpvadapter.h"
@@ -66,7 +66,6 @@ struct vo_cocoa_state {
     MpvCocoaAdapter *adapter;
 
     CGLContextObj cgl_ctx;
-    NSOpenGLContext *nsgl_ctx;
 
     NSScreen *current_screen;
     CGDirectDisplayID display_id;
@@ -83,10 +82,6 @@ struct vo_cocoa_state {
     bool embedded; // wether we are embedding in another GUI
 
     IOPMAssertionID power_mgmt_assertion;
-    io_connect_t light_sensor;
-    uint64_t last_lmuvalue;
-    int last_lux;
-    IONotificationPortRef light_sensor_io_port;
 
     struct mp_log *log;
 
@@ -181,86 +176,6 @@ static void set_application_icon(NSApplication *app)
     [app setApplicationIconImage:icon];
     [icon release];
     [pool release];
-}
-
-static int lmuvalue_to_lux(uint64_t v)
-{
-    // the polinomial approximation for apple lmu value -> lux was empirically
-    // derived by firefox developers (Apple provides no documentation).
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=793728
-    double power_c4 = 1/pow((double)10,27);
-    double power_c3 = 1/pow((double)10,19);
-    double power_c2 = 1/pow((double)10,12);
-    double power_c1 = 1/pow((double)10,5);
-
-    double term4 = -3.0 * power_c4 * pow(v,4);
-    double term3 =  2.6 * power_c3 * pow(v,3);
-    double term2 = -3.4 * power_c2 * pow(v,2);
-    double term1 =  3.9 * power_c1 * v;
-
-    int lux = ceil(term4 + term3 + term2 + term1 - 0.19);
-    return lux > 0 ? lux : 0;
-}
-
-static void light_sensor_cb(void *ctx, io_service_t srv, natural_t mtype, void *msg)
-{
-    struct vo *vo = ctx;
-    struct vo_cocoa_state *s = vo->cocoa;
-    uint32_t outputs = 2;
-    uint64_t values[outputs];
-
-    kern_return_t kr = IOConnectCallMethod(
-            s->light_sensor, 0, NULL, 0, NULL, 0, values, &outputs, nil, 0);
-
-    if (kr == KERN_SUCCESS) {
-        uint64_t mean = (values[0] + values[1]) / 2;
-        if (s->last_lmuvalue != mean) {
-            s->last_lmuvalue = mean;
-            s->last_lux = lmuvalue_to_lux(s->last_lmuvalue);
-            flag_events(vo, VO_EVENT_AMBIENT_LIGHTING_CHANGED);
-        }
-    }
-}
-
-static void cocoa_init_light_sensor(struct vo *vo)
-{
-    run_on_main_thread(vo, ^{
-        struct vo_cocoa_state *s = vo->cocoa;
-        io_service_t srv = IOServiceGetMatchingService(
-                kIOMasterPortDefault, IOServiceMatching("AppleLMUController"));
-        if (srv == IO_OBJECT_NULL) {
-            MP_VERBOSE(vo, "can't find an ambient light sensor\n");
-            return;
-        }
-
-        // subscribe to notifications from the light sensor driver
-        s->light_sensor_io_port = IONotificationPortCreate(kIOMasterPortDefault);
-        IONotificationPortSetDispatchQueue(
-            s->light_sensor_io_port, dispatch_get_main_queue());
-
-        io_object_t n;
-        IOServiceAddInterestNotification(
-            s->light_sensor_io_port, srv, kIOGeneralInterest, light_sensor_cb,
-            vo, &n);
-
-        kern_return_t kr = IOServiceOpen(srv, mach_task_self(), 0,
-                                         &s->light_sensor);
-        IOObjectRelease(srv);
-        if (kr != KERN_SUCCESS) {
-            MP_WARN(vo, "can't start ambient light sensor connection\n");
-            return;
-        }
-
-        light_sensor_cb(vo, 0, 0, NULL);
-    });
-}
-
-static void cocoa_uninit_light_sensor(struct vo_cocoa_state *s)
-{
-    if (s->light_sensor_io_port) {
-        IONotificationPortDestroy(s->light_sensor_io_port);
-        IOObjectRelease(s->light_sensor);
-    }
 }
 
 static NSScreen *get_screen_by_id(struct vo *vo, int screen_id)
@@ -390,7 +305,6 @@ void vo_cocoa_init(struct vo *vo)
     vo->cocoa = s;
     vo_cocoa_update_screen_info(vo);
     vo_cocoa_init_displaylink(vo);
-    cocoa_init_light_sensor(vo);
     cocoa_add_screen_reconfiguration_observer(vo);
     cocoa_add_event_monitor(vo);
 
@@ -451,11 +365,9 @@ void vo_cocoa_uninit(struct vo *vo)
         enable_power_management(s);
         vo_cocoa_uninit_displaylink(s);
         vo_cocoa_signal_swap(s);
-        cocoa_uninit_light_sensor(s);
         cocoa_rm_screen_reconfiguration_observer(vo);
         cocoa_rm_event_monitor(vo);
 
-        [s->nsgl_ctx release];
         CGLReleaseContext(s->cgl_ctx);
 
         // needed to stop resize events triggered by the event's view -clear
@@ -609,11 +521,9 @@ static void create_ui(struct vo *vo, struct mp_rect *win, int geo_flags)
     cocoa_register_menu_item_action(MPM_ZOOM,     @selector(performZoom:));
 
     s->video = [[MpvVideoView alloc] initWithFrame:[s->view bounds]];
-    [s->video setWantsBestResolutionOpenGLSurface:YES];
-
     [s->view addSubview:s->video];
-    [s->nsgl_ctx setView:s->video];
     [s->video release];
+    s->video.layer = [s->view makeBackingLayer];
 
     s->video.adapter = adapter;
     [adapter release];
@@ -689,15 +599,6 @@ static void cocoa_rm_screen_reconfiguration_observer(struct vo *vo)
         cocoa_screen_reconfiguration_observer, vo);
 }
 
-void vo_cocoa_set_opengl_ctx(struct vo *vo, CGLContextObj ctx)
-{
-    struct vo_cocoa_state *s = vo->cocoa;
-    run_on_main_thread(vo, ^{
-        s->cgl_ctx = CGLRetainContext(ctx);
-        s->nsgl_ctx = [[NSOpenGLContext alloc] initWithCGLContextObj:s->cgl_ctx];
-    });
-}
-
 int vo_cocoa_config_window(struct vo *vo)
 {
     struct vo_cocoa_state *s = vo->cocoa;
@@ -750,7 +651,6 @@ int vo_cocoa_config_window(struct vo *vo)
         vo->dwidth  = s->vo_dwidth  = frame.size.width;
         vo->dheight = s->vo_dheight = frame.size.height;
 
-        [s->nsgl_ctx update];
     });
     return 0;
 }
@@ -770,8 +670,6 @@ static void resize_event(struct vo *vo)
     // Live-resizing: make sure at least one frame will be drawn
     s->frame_w = s->frame_h = 0;
     pthread_mutex_unlock(&s->lock);
-
-    [s->nsgl_ctx update];
 
     vo_wakeup(vo);
 }
@@ -818,6 +716,12 @@ void vo_cocoa_swap_buffers(struct vo *vo)
     s->frame_h = vo->dheight;
     pthread_cond_signal(&s->wakeup);
     pthread_mutex_unlock(&s->lock);
+}
+
+void *vo_cocoa_video_view(struct vo *vo)
+{
+    struct vo_cocoa_state *s = vo->cocoa;
+    return s->video;
 }
 
 static int vo_cocoa_check_events(struct vo *vo)
@@ -920,12 +824,6 @@ static int vo_cocoa_control_on_main_thread(struct vo *vo, int request, void *arg
         *(double *)arg = vo_cocoa_update_screen_fps(vo);
         return VO_TRUE;
         break;
-    case VOCTRL_GET_AMBIENT_LUX:
-        if (s->light_sensor != IO_OBJECT_NULL) {
-            *(int *)arg = s->last_lux;
-            return VO_TRUE;
-        }
-        break;
     }
     return VO_NOTIMPL;
 }
@@ -939,6 +837,8 @@ static int vo_cocoa_control_async(struct vo *vo, int *events, int request, void 
     }
     return VO_NOTIMPL;
 }
+
+void vo_cocoa_set_opengl_ctx(struct vo *vo, CGLContextObj ctx) {}
 
 int vo_cocoa_control(struct vo *vo, int *events, int request, void *arg)
 {

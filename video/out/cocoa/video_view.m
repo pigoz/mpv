@@ -15,6 +15,7 @@
  * License along with mpv.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#import <QuartzCore/QuartzCore.h>
 #include "osdep/macosx_compat.h"
 #include "video/out/cocoa_common.h"
 #include "video_view.h"
@@ -42,11 +43,18 @@
     return [self convertRectToBacking:[self frame]];
 }
 
+- (BOOL) wantsLayer { return YES; }
 
-- (void)drawRect:(NSRect)rect
-{
-    [[NSColor blackColor] setFill];
-    NSRectFill(rect);
-    [self.adapter performAsyncResize:[self frameInPixels].size];
+/** Make the view want to draw using the backing layer instead of using
+ * drawRect:. */
+- (BOOL) wantsUpdateLayer { return YES; }
+
+- (CALayer*) makeBackingLayer {
+    CALayer* layer = [self.class.layerClass layer];
+    CGSize viewScale = [self convertSizeToBacking: CGSizeMake(1.0, 1.0)];
+    layer.contentsScale = MIN(viewScale.width, viewScale.height);
+    return layer;
 }
+
++(Class) layerClass { return [CAMetalLayer class]; }
 @end

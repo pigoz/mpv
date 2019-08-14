@@ -36,5 +36,6 @@ int vo_cocoa_control(struct vo *vo, int *events, int request, void *arg);
 
 void vo_cocoa_swap_buffers(struct vo *vo);
 void vo_cocoa_set_opengl_ctx(struct vo *vo, CGLContextObj ctx);
+void *vo_cocoa_video_view(struct vo *vo);
 
 #endif /* MPLAYER_COCOA_COMMON_H */
