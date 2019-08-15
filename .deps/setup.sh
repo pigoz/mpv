@@ -15,6 +15,7 @@ fi
 
 if [ ! -d $VULKAN_SDK_BASENAME ]; then
  tar zxvf "$VULKAN_SDK_BASENAME.tar.gz"
+ cp -R $VULKAN_SDK/include/libshaderc $VULKAN_SDK/include/shaderc
 fi
 
 if [ ! -d $VULKAN_SDK_PKG_CONFIG_PATH ]; then
@@ -41,6 +42,7 @@ Name: shaderc
 Libs: -L\${libdir} -lshaderc_shared
 Cflags: -I\${includedir}
 EOL
+
 
 export PKG_CONFIG_PATH=$VULKAN_SDK_PKG_CONFIG_PATH:$PKG_CONFIG_PATH
 
