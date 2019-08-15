@@ -33,6 +33,15 @@ Libs.private: -lm
 Cflags: -I\${includedir}
 EOL
 
+cat > "$VULKAN_SDK_PKG_CONFIG_PATH/shaderc.pc" << EOL
+libdir=$VULKAN_SDK/lib
+includedir=$VULKAN_SDK/include
+
+Name: shaderc
+Libs: -L\${libdir} -lshaderc_shared
+Cflags: -I\${includedir}
+EOL
+
 export PKG_CONFIG_PATH=$VULKAN_SDK_PKG_CONFIG_PATH:$PKG_CONFIG_PATH
 
 if [ ! -d libplacebo ]; then
