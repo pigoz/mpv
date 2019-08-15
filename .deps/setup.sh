@@ -39,6 +39,8 @@ libdir=$VULKAN_SDK/lib
 includedir=$VULKAN_SDK/include
 
 Name: shaderc
+Description: shaderc
+Version: 2019.0.1
 Libs: -L\${libdir} -lshaderc_shared
 Cflags: -I\${includedir}
 EOL
